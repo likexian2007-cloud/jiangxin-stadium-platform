@@ -1,0 +1,3062 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <title>ZeroClash · 建筑与体育场机电-结构-建筑综合碰撞优化平台</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="description" content="ZeroClash —— 匠心筑馆面向通用建筑与体育场项目的机电-结构-建筑综合碰撞自动优化平台，实现导入-分析-修改-导出的治理闭环。" />
+
+  <!-- 浏览器图标，保留“匠”字 -->
+  <link rel="icon" type="image/svg+xml"
+        href='data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><defs><linearGradient id="g" x1="0" x2="1" y1="0" y2="1"><stop stop-color="%23b91c1c"/><stop offset="0.4" stop-color="%23f97316"/><stop offset="1" stop-color="%2316a34a"/></linearGradient></defs><circle cx="32" cy="32" r="30" fill="url(%23g)"/><circle cx="32" cy="32" r="22" fill="none" stroke="rgba(248,250,252,0.9)" stroke-width="2"/><text x="32" y="38" text-anchor="middle" font-size="24" fill="white" font-family="system-ui, -apple-system">匠</text></svg>' />
+
+  <style>
+    :root {
+      --card-bg: #050816;
+      --accent: #3b82f6;
+      --accent-soft: rgba(59, 130, 246, 0.18);
+      --accent-2: #22c55e;
+      --text-main: #f9fafb;
+      --text-sub: #9ca3af;
+      --border-subtle: #1f2937;
+      --radius-xl: 20px;
+      --shadow-soft: 0 20px 55px rgba(0, 0, 0, 0.7);
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+        Roboto, "PingFang SC", "Microsoft YaHei", sans-serif;
+      color: var(--text-main);
+      line-height: 1.6;
+      min-height: 100vh;
+      overflow-x: hidden;
+      background: #020617;
+    }
+
+    a { color: inherit; text-decoration: none; }
+
+    /* ===== 动态数字孪生背景 ===== */
+    .global-bg {
+      position: fixed;
+      inset: 0;
+      z-index: -3;
+      background:
+        radial-gradient(circle at 0% 0%, rgba(59,130,246,0.35), transparent 55%),
+        radial-gradient(circle at 100% 100%, rgba(34,197,94,0.30), transparent 60%),
+        radial-gradient(circle at 50% 110%, rgba(56,189,248,0.25), transparent 60%),
+        #020617;
+      animation: bgFlow 14s ease-in-out infinite alternate;
+    }
+
+    .bg-grid {
+      position: fixed;
+      inset: -200px -200px;
+      z-index: -2;
+      opacity: 0.55;
+      background-image:
+        linear-gradient(90deg, rgba(148, 163, 184, 0.45) 1px, transparent 1px),
+        linear-gradient(180deg, rgba(148, 163, 184, 0.35) 1px, transparent 1px);
+      background-size: 36px 36px;
+      mix-blend-mode: screen;
+      animation: gridMove 18s linear infinite;
+      pointer-events: none;
+    }
+
+    .bg-orbit {
+      position: fixed;
+      border-radius: 999px;
+      border: 1px solid rgba(56, 189, 248, 0.25);
+      box-shadow:
+        0 0 50px rgba(56, 189, 248, 0.8),
+        0 0 160px rgba(129, 140, 248, 0.75);
+      pointer-events: none;
+      z-index: -1;
+      filter: blur(0.2px);
+    }
+    .bg-orbit-1 {
+      width: 560px;
+      height: 560px;
+      top: -90px;
+      right: -150px;
+      animation: orbitPulse 20s linear infinite;
+    }
+    .bg-orbit-2 {
+      width: 420px;
+      height: 420px;
+      bottom: -150px;
+      left: -110px;
+      animation: orbitPulse 17s linear infinite reverse;
+    }
+
+    .bg-particle {
+      position: fixed;
+      width: 4px;
+      height: 4px;
+      border-radius: 999px;
+      background: rgba(248, 250, 252, 0.9);
+      box-shadow: 0 0 10px rgba(248, 250, 252, 0.8);
+      opacity: 0.5;
+      z-index: -1;
+      animation: particleMove 12s linear infinite;
+    }
+    .bg-particle:nth-child(1) { top: 20%; left: 10%; animation-duration: 14s; }
+    .bg-particle:nth-child(2) { top: 70%; left: 80%; animation-duration: 12s; }
+    .bg-particle:nth-child(3) { top: 40%; left: 50%; animation-duration: 10s; }
+    .bg-particle:nth-child(4) { top: 85%; left: 25%; animation-duration: 16s; }
+
+    @keyframes bgFlow {
+      0% {
+        background-position: 0 0, 0 0, 0 0;
+        filter: hue-rotate(0deg);
+      }
+      50% {
+        background-position: 30px -20px, -40px 40px, 0 30px;
+        filter: hue-rotate(10deg);
+      }
+      100% {
+        background-position: -30px 10px, 40px -40px, 0 -20px;
+        filter: hue-rotate(-8deg);
+      }
+    }
+
+    @keyframes gridMove {
+      0% { transform: translate3d(0,0,0); }
+      100% { transform: translate3d(80px,80px,0); }
+    }
+
+    @keyframes orbitPulse {
+      0% { transform: rotate(0deg) scale(1); opacity: 0.6; }
+      50% { transform: rotate(180deg) scale(1.08); opacity: 1; }
+      100% { transform: rotate(360deg) scale(1); opacity: 0.6; }
+    }
+
+    @keyframes particleMove {
+      0% { transform: translate3d(0,0,0); opacity: 0.3; }
+      50% { transform: translate3d(40px,-40px,0); opacity: 0.9; }
+      100% { transform: translate3d(80px,40px,0); opacity: 0.3; }
+    }
+
+    .page {
+      max-width: 1120px;
+      margin: 0 auto;
+      padding: 24px 16px 48px;
+      position: relative;
+      z-index: 1;
+    }
+
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 20px;
+    }
+
+    .logo-wrap {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    /* ===== 主图标：三维中国风“玉璧 + 印章” ===== */
+    .logo-mark {
+      width: 46px;
+      height: 46px;
+      border-radius: 999px;
+      background:
+        conic-gradient(from 210deg, #b91c1c, #f97316, #facc15, #16a34a, #0ea5e9, #6366f1, #b91c1c);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow:
+        0 8px 22px rgba(15,23,42,0.9),
+        0 0 18px rgba(248,250,252,0.9);
+      position: relative;
+      overflow: hidden;
+      animation: logoSpin 18s linear infinite;
+    }
+
+    /* 内部立体玉璧 */
+    .logo-mark::before {
+      content: "";
+      position: absolute;
+      inset: 4px;
+      border-radius: inherit;
+      background:
+        radial-gradient(circle at 30% 20%, rgba(255,255,255,0.9), transparent 40%),
+        radial-gradient(circle at 70% 80%, #991b1b, #7f1d1d 55%, #111827 100%);
+      box-shadow:
+        inset 0 2px 6px rgba(248,250,252,0.65),
+        inset 0 -6px 10px rgba(15,23,42,0.9);
+    }
+
+    /* 高光 */
+    .logo-mark::after {
+      content: "";
+      position: absolute;
+      inset: 3px;
+      border-radius: inherit;
+      background:
+        radial-gradient(circle at 20% 15%, rgba(255,255,255,0.8), transparent 45%),
+        radial-gradient(circle at 80% 90%, rgba(15,23,42,0.9), transparent 55%);
+      mix-blend-mode: screen;
+      opacity: 0.85;
+    }
+
+    .logo-mark span {
+      position: relative;
+      font-weight: 900;
+      font-size: 22px;
+      color: #fefce8;
+      text-shadow:
+        0 1px 2px rgba(15,23,42,0.9),
+        0 -1px 1px rgba(248,250,252,0.6);
+      z-index: 2;
+    }
+
+    .logo-text-block {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .logo-text-main-row {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .logo-text-main {
+      font-weight: 700;
+      letter-spacing: 0.03em;
+      font-size: 18px;
+    }
+
+    .logo-text-sub {
+      font-size: 11px;
+      color: var(--text-sub);
+    }
+
+    /* ===== 体育场子图标：三维椭圆碗 + 交错钢肋 ===== */
+    .stadium-sub-logo {
+      display: none;
+      position: relative;
+      width: 48px;
+      height: 24px;
+      border-radius: 999px;
+      padding: 2px;
+      background:
+        radial-gradient(circle at 0 0, rgba(56,189,248,0.85), transparent 50%),
+        linear-gradient(90deg, #4f46e5, #22c55e);
+      box-shadow:
+        0 4px 12px rgba(15,23,42,0.9),
+        0 0 18px rgba(56,189,248,0.9);
+      overflow: hidden;
+      animation: stadiumLogoPulse 2.8s ease-in-out infinite;
+    }
+
+    .stadium-sub-ring {
+      position: absolute;
+      inset: 2px;
+      border-radius: 999px;
+      border: 2px solid rgba(248,250,252,0.95);
+      box-shadow:
+        inset 0 0 5px rgba(15,23,42,0.9),
+        0 0 3px rgba(248,250,252,0.6);
+    }
+
+    .stadium-sub-field {
+      position: absolute;
+      inset: 5px 8px;
+      border-radius: 999px;
+      background:
+        radial-gradient(circle at 50% 0, #bbf7d0, #22c55e 60%, #15803d);
+      box-shadow:
+        inset 0 0 4px rgba(22,101,52,0.9),
+        0 2px 5px rgba(15,23,42,0.9);
+    }
+
+    .stadium-sub-rib {
+      position: absolute;
+      left: -6px;
+      right: -6px;
+      height: 2px;
+      background: rgba(148,163,184,0.95);
+      border-radius: 999px;
+      box-shadow: 0 0 6px rgba(148,163,184,0.8);
+    }
+
+    .stadium-sub-rib-1 { top: 7px; transform: rotate(-20deg); }
+    .stadium-sub-rib-2 { top: 11px; transform: rotate(13deg); }
+    .stadium-sub-rib-3 { top: 15px; transform: rotate(-8deg); }
+
+    .stadium-sub-logo-visible {
+      display: inline-flex;
+    }
+
+    @keyframes stadiumLogoPulse {
+      0%, 100% { transform: scale(1); opacity: 0.85; }
+      50% { transform: scale(1.06); opacity: 1; }
+    }
+
+    nav {
+      display: flex;
+      align-items: center;
+      gap: 18px;
+      font-size: 14px;
+      color: var(--text-sub);
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+
+    nav a {
+      padding: 4px 0;
+      position: relative;
+      cursor: pointer;
+    }
+
+    nav a::after {
+      content: "";
+      position: absolute;
+      left: 0;
+      bottom: -3px;
+      width: 0;
+      height: 2px;
+      border-radius: 999px;
+      background: linear-gradient(90deg, var(--accent), var(--accent-2));
+      transition: width 0.18s ease-out;
+    }
+
+    nav a:hover::after { width: 100%; }
+
+    .nav-active {
+      color: #e5e7eb;
+    }
+    .nav-active::after {
+      width: 100%;
+    }
+
+    .btn-small-outline {
+      border-radius: 999px;
+      border: 1px solid rgba(148, 163, 184, 0.6);
+      padding: 6px 14px;
+      font-size: 12px;
+      color: #e5e7eb;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: rgba(15, 23, 42, 0.7);
+      backdrop-filter: blur(10px);
+      cursor: pointer;
+      transition: border-color 0.17s, background 0.17s, transform 0.1s;
+    }
+    .btn-small-outline:hover {
+      border-color: var(--accent);
+      background: rgba(15, 23, 42, 0.9);
+      transform: translateY(-1px);
+    }
+
+    @keyframes logoSpin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    @keyframes logoPulse {
+      0%, 100% { box-shadow: inset 0 0 0 0 rgba(37, 99, 235, 0.1); }
+      50% { box-shadow: inset 0 0 12px 4px rgba(37, 99, 235, 0.4); }
+    }
+
+    /* ===== 视图切换容器 ===== */
+    main#view-container {
+      position: relative;
+      min-height: 600px;
+      transition: height 0.4s ease;
+    }
+
+    .view {
+      position: absolute;
+      inset: 0;
+      opacity: 0;
+      pointer-events: none;
+      transform: translateY(16px);
+      transition: opacity 0.28s ease-out, transform 0.28s ease-out;
+    }
+
+    .view-active {
+      opacity: 1;
+      pointer-events: auto;
+      transform: translateY(0);
+    }
+
+    .hero {
+      display: grid;
+      grid-template-columns: minmax(0, 3fr) minmax(0, 2.2fr);
+      gap: 28px;
+      align-items: stretch;
+      margin-bottom: 40px;
+    }
+
+    .hero-card {
+      padding: 24px 22px 22px;
+      border-radius: var(--radius-xl);
+      background:
+        radial-gradient(circle at 0 0, rgba(56, 189, 248, 0.24), transparent 60%),
+        radial-gradient(circle at 100% 0, rgba(34, 197, 94, 0.18), transparent 60%),
+        rgba(15, 23, 42, 0.97);
+      box-shadow: var(--shadow-soft);
+      border: 1px solid rgba(148, 163, 184, 0.35);
+    }
+
+    .tagline {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 4px 10px;
+      border-radius: 999px;
+      background: rgba(15, 23, 42, 0.9);
+      border: 1px solid rgba(148, 163, 184, 0.45);
+      font-size: 11px;
+      color: #e5e7eb;
+      margin-bottom: 12px;
+    }
+
+    .tag-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: radial-gradient(circle at 0 0, #4ade80, #16a34a 60%, #166534 100%);
+      box-shadow: 0 0 8px rgba(74, 222, 128, 0.9);
+    }
+
+    .hero-title {
+      font-size: clamp(26px, 4vw, 34px);
+      font-weight: 800;
+      letter-spacing: 0.03em;
+      margin-bottom: 10px;
+    }
+
+    .hero-title span {
+      background: linear-gradient(120deg, #60a5fa, #4ade80, #22c55e);
+      -webkit-background-clip: text;
+      color: transparent;
+    }
+
+    .hero-subtitle {
+      font-size: 14px;
+      color: var(--text-sub);
+      max-width: 32rem;
+      margin-bottom: 18px;
+    }
+
+    .hero-kpis {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-bottom: 18px;
+    }
+
+    .kpi-pill {
+      padding: 7px 12px;
+      border-radius: 999px;
+      background: rgba(15, 23, 42, 0.95);
+      border: 1px solid rgba(51, 65, 85, 0.85);
+      font-size: 11px;
+      color: #e5e7eb;
+      display: inline-flex;
+      align-items: baseline;
+      gap: 6px;
+      cursor: pointer;
+    }
+    .kpi-pill strong { font-size: 15px; }
+
+    .hero-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-bottom: 12px;
+    }
+
+    .btn-primary {
+      border-radius: 999px;
+      padding: 9px 18px;
+      font-size: 13px;
+      border: none;
+      cursor: pointer;
+      background: radial-gradient(circle at 0 0, #4f46e5, transparent 60%),
+        linear-gradient(135deg, var(--accent), #6366f1);
+      color: #f9fafb;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      box-shadow: 0 12px 30px rgba(37, 99, 235, 0.75);
+      transition: transform 0.1s ease-out, box-shadow 0.1s ease-out;
+    }
+    .btn-primary:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 16px 38px rgba(37, 99, 235, 0.9);
+    }
+
+    .btn-secondary {
+      border-radius: 999px;
+      padding: 9px 16px;
+      font-size: 13px;
+      border: 1px solid rgba(148, 163, 184, 0.7);
+      cursor: pointer;
+      background: rgba(15, 23, 42, 0.9);
+      color: #e5e7eb;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      transition: background 0.15s ease-out, border-color 0.15s ease-out,
+        transform 0.1s ease-out;
+    }
+    .btn-secondary:hover {
+      background: rgba(15, 23, 42, 1);
+      border-color: var(--accent-2);
+      transform: translateY(-1px);
+    }
+
+    .hero-hint { font-size: 11px; color: var(--text-sub); }
+
+    .hero-right-card {
+      border-radius: var(--radius-xl);
+      background: radial-gradient(circle at 10% 0, rgba(56, 189, 248, 0.25), transparent 55%),
+        radial-gradient(circle at 100% 100%, rgba(129, 140, 248, 0.25), transparent 55%),
+        #020617;
+      border: 1px solid rgba(55, 65, 81, 0.95);
+      padding: 16px 16px 18px;
+      box-shadow: var(--shadow-soft);
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .preview-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 12px;
+      color: var(--text-sub);
+    }
+
+    .preview-dots { display: flex; gap: 5px; }
+
+    .preview-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 999px;
+      background: #6b7280;
+      opacity: 0.7;
+    }
+    .preview-dot:nth-child(1) { background: #ef4444; }
+    .preview-dot:nth-child(2) { background: #f59e0b; }
+    .preview-dot:nth-child(3) { background: #22c55e; }
+
+    .preview-window {
+      flex: 1;
+      margin-top: 4px;
+      border-radius: 14px;
+      border: 1px solid rgba(51, 65, 85, 0.9);
+      background: radial-gradient(circle at 0 0, rgba(96, 165, 250, 0.32), transparent 55%),
+        #020617;
+      padding: 12px;
+      display: grid;
+      grid-template-columns: 1.2fr 1fr;
+      gap: 10px;
+    }
+
+    .preview-left {
+      border-radius: 12px;
+      background: radial-gradient(circle at 50% 0, rgba(16, 185, 129, 0.45), transparent 55%),
+        rgba(15, 23, 42, 0.9);
+      position: relative;
+      overflow: hidden;
+    }
+
+    /* 更“真实”的碰撞背景：机电多专业线管示意 */
+    .preview-left::before {
+      content: "";
+      position: absolute;
+      inset: 14px 18px 58px 18px;
+      border-radius: 10px;
+      background:
+        linear-gradient(135deg, rgba(15,23,42,0.4), rgba(15,23,42,0.95)),
+        linear-gradient(90deg,
+          transparent 0 14%, rgba(34,197,94,0.8) 14% 17%, transparent 17% 36%,
+          rgba(59,130,246,0.9) 36% 39%, transparent 39% 63%,
+          rgba(234,179,8,0.9) 63% 66%, transparent 66% 100%),
+        linear-gradient(0deg,
+          transparent 0 18%, rgba(96,165,250,0.9) 18% 21%, transparent 21% 44%,
+          rgba(16,185,129,0.9) 44% 47%, transparent 47% 73%,
+          rgba(244,63,94,0.9) 73% 76%, transparent 76% 100%);
+      opacity: 0.8;
+      mix-blend-mode: screen;
+      filter: saturate(1.4);
+    }
+
+    .preview-mesh {
+      position: absolute;
+      inset: 0;
+      opacity: 0.35;
+      background-image: linear-gradient(
+          90deg,
+          rgba(148, 163, 184, 0.35) 1px,
+          transparent 1px
+        ),
+        linear-gradient(
+          180deg,
+          rgba(148, 163, 184, 0.3) 1px,
+          transparent 1px
+        );
+      background-size: 26px 26px;
+      mix-blend-mode: screen;
+      animation: gridMove 18s linear infinite;
+    }
+
+    /* 碰撞红点层 */
+    .preview-clashes {
+      position: absolute;
+      inset: 16px 16px 60px 16px;
+      pointer-events: none;
+    }
+
+    .preview-clash-dot {
+      position: absolute;
+      width: 6px;
+      height: 6px;
+      border-radius: 999px;
+      background: #ef4444;
+      box-shadow: 0 0 12px rgba(248, 113, 113, 0.95);
+      opacity: 0;
+      transform: scale(0.3);
+      animation: clashPop 0.8s forwards;
+      animation-delay: var(--delay, 0s);
+    }
+
+    @keyframes clashPop {
+      0% { opacity: 0; transform: scale(0.3); }
+      50% { opacity: 1; transform: scale(1.05); }
+      100% { opacity: 0.85; transform: scale(0.9); }
+    }
+
+    .preview-stats {
+      position: absolute;
+      bottom: 10px;
+      left: 10px;
+      right: 10px;
+      display: flex;
+      justify-content: space-between;
+      gap: 8px;
+      font-size: 10px;
+    }
+
+    .preview-stat-card {
+      flex: 1;
+      background: rgba(15, 23, 42, 0.92);
+      border-radius: 10px;
+      padding: 7px 8px;
+      border: 1px solid rgba(55, 65, 81, 0.85);
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      cursor: pointer;
+    }
+
+    .preview-stat-card strong { font-size: 13px; }
+
+    /* AI 覆盖率小模块 */
+    .preview-ai-rate {
+      margin-top: 6px;
+      font-size: 11px;
+      color: #e5e7eb;
+      padding: 4px 8px;
+      border-radius: 999px;
+      align-self: flex-end;
+      background: radial-gradient(circle at 0 0, rgba(34,197,94,0.45), transparent 60%);
+      border: 1px solid rgba(34,197,94,0.7);
+      box-shadow: 0 0 12px rgba(34,197,94,0.65);
+    }
+
+    .preview-right {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      font-size: 11px;
+      color: var(--text-sub);
+    }
+
+    .preview-step {
+      padding: 6px 7px;
+      border-radius: 10px;
+      border: 1px solid rgba(55, 65, 81, 0.9);
+      background: rgba(15, 23, 42, 0.96);
+      display: flex;
+      gap: 8px;
+      align-items: flex-start;
+    }
+
+    .preview-step-badge {
+      min-width: 18px;
+      height: 18px;
+      border-radius: 999px;
+      background: var(--accent-soft);
+      border: 1px solid rgba(59, 130, 246, 0.7);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 11px;
+      color: #bfdbfe;
+      font-weight: 600;
+    }
+
+    .preview-step-title {
+      font-size: 11px;
+      color: #e5e7eb;
+      margin-bottom: 2px;
+    }
+
+    section { margin-bottom: 32px; }
+
+    .section-title { font-size: 18px; font-weight: 700; margin-bottom: 8px; }
+
+    .section-subtitle {
+      font-size: 13px;
+      color: var(--text-sub);
+      margin-bottom: 14px;
+    }
+
+    .features-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 14px;
+    }
+
+    .feature-card {
+      border-radius: 16px;
+      background: rgba(15, 23, 42, 0.96);
+      border: 1px solid rgba(51, 65, 85, 0.9);
+      padding: 12px 12px 13px;
+      font-size: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      cursor: pointer;
+    }
+
+    .feature-tag {
+      font-size: 10px;
+      color: var(--accent-2);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+
+    .feature-title { font-size: 13px; font-weight: 600; }
+
+    .feature-desc { color: var(--text-sub); }
+
+    .feature-list { margin-top: 4px; padding-left: 16px; color: #e5e7eb; }
+
+    .feature-list li { margin-bottom: 2px; }
+
+    /* 建筑模块卡片 */
+    .modules-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 14px;
+      font-size: 12px;
+    }
+
+    .module-card {
+      border-radius: 16px;
+      background: rgba(15, 23, 42, 0.96);
+      border: 1px solid rgba(59, 130, 246, 0.6);
+      padding: 12px 13px 13px;
+      cursor: pointer;
+      transition: transform 0.12s ease-out, box-shadow 0.12s ease-out, border-color 0.12s ease-out;
+      box-shadow: 0 8px 20px rgba(15, 23, 42, 0.6);
+    }
+    .module-card:hover {
+      transform: translateY(-2px);
+      border-color: var(--accent-2);
+      box-shadow: 0 14px 32px rgba(34, 197, 94, 0.45);
+    }
+
+    .module-tag {
+      font-size: 10px;
+      color: #93c5fd;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      margin-bottom: 2px;
+    }
+
+    .module-title { font-size: 13px; font-weight: 600; margin-bottom: 4px; }
+
+    .module-desc { color: var(--text-sub); margin-bottom: 6px; }
+
+    .module-link-hint { font-size: 11px; color: #e5e7eb; }
+
+    /* 体育场卡片 */
+    .stadium-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 14px;
+      font-size: 12px;
+    }
+
+    .stadium-card {
+      border-radius: 16px;
+      background: rgba(15, 23, 42, 0.96);
+      border: 1px solid rgba(59, 130, 246, 0.55);
+      padding: 11px 12px 12px;
+      cursor: pointer;
+    }
+
+    .stadium-badge {
+      font-size: 10px;
+      color: #60a5fa;
+      margin-bottom: 2px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    .stadium-title { font-size: 13px; font-weight: 600; margin-bottom: 4px; }
+
+    .stadium-desc { color: var(--text-sub); }
+
+    .stadium-desc span { color: #e5e7eb; }
+
+    .steps-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 12px;
+      font-size: 12px;
+    }
+
+    .step-card {
+      border-radius: 14px;
+      padding: 10px 11px;
+      background: rgba(15, 23, 42, 0.96);
+      border: 1px solid rgba(55, 65, 81, 0.9);
+      cursor: pointer;
+    }
+
+    .step-index { font-size: 11px; color: var(--accent); font-weight: 600; margin-bottom: 4px; }
+
+    .step-title { font-size: 13px; font-weight: 600; margin-bottom: 4px; }
+
+    .step-desc { color: var(--text-sub); }
+
+    /* ===== 平台能力矩阵 ===== */
+    .matrix-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 14px;
+      font-size: 12px;
+    }
+
+    .matrix-card {
+      border-radius: 16px;
+      background: rgba(15,23,42,0.98);
+      border: 1px solid rgba(75,85,99,0.95);
+      padding: 12px 13px 13px;
+      box-shadow: 0 12px 30px rgba(15,23,42,0.8);
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      cursor: pointer;
+    }
+
+    .matrix-title { font-size: 13px; font-weight: 600; }
+
+    .matrix-tag-line {
+      font-size: 10px;
+      color: #60a5fa;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+    }
+
+    .matrix-badges {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 4px;
+      margin-top: 4px;
+    }
+
+    .matrix-badge {
+      font-size: 10px;
+      padding: 2px 6px;
+      border-radius: 999px;
+      border: 1px solid rgba(148,163,184,0.8);
+      background: rgba(15,23,42,0.96);
+      color: #e5e7eb;
+    }
+
+    /* ===== ZeroClash 实验室 ===== */
+    .lab-card {
+      border-radius: 18px;
+      border: 1px solid rgba(59,130,246,0.7);
+      background:
+        radial-gradient(circle at 0 0, rgba(59,130,246,0.35), transparent 55%),
+        radial-gradient(circle at 100% 100%, rgba(34,197,94,0.25), transparent 55%),
+        rgba(15,23,42,0.96);
+      padding: 14px 14px 16px;
+      box-shadow: 0 18px 45px rgba(15,23,42,0.9);
+      display: grid;
+      grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr);
+      gap: 14px;
+      font-size: 12px;
+    }
+
+    .lab-title { font-size: 14px; font-weight: 600; margin-bottom: 4px; }
+
+    .lab-sub { font-size: 12px; color: var(--text-sub); margin-bottom: 10px; }
+
+    .lab-toggle-group {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 10px;
+    }
+
+    .pill-toggle {
+      padding: 4px 10px;
+      border-radius: 999px;
+      border: 1px solid rgba(148,163,184,0.6);
+      background: rgba(15,23,42,0.85);
+      color: #e5e7eb;
+      font-size: 11px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: background 0.15s, border-color 0.15s, transform 0.1s;
+    }
+
+    .pill-toggle span.small-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 999px;
+      background: rgba(148,163,184,0.7);
+    }
+
+    .pill-toggle-active {
+      border-color: var(--accent-2);
+      background: radial-gradient(circle at 0 0, rgba(34,197,94,0.6), transparent 60%);
+      transform: translateY(-1px);
+    }
+    .pill-toggle-active span.small-dot {
+      background: #22c55e;
+      box-shadow: 0 0 8px rgba(34,197,94,0.9);
+    }
+
+    .lab-mode-desc {
+      border-radius: 12px;
+      border: 1px solid rgba(148,163,184,0.6);
+      background: rgba(15,23,42,0.96);
+      padding: 8px 10px;
+      color: var(--text-sub);
+      font-size: 12px;
+    }
+
+    .lab-side {
+      border-radius: 14px;
+      border: 1px solid rgba(55,65,81,0.9);
+      background: rgba(15,23,42,0.96);
+      padding: 10px 11px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .lab-side-title {
+      font-size: 12px;
+      color: #e5e7eb;
+      margin-bottom: 2px;
+    }
+
+    .lab-meter {
+      height: 7px;
+      border-radius: 999px;
+      background: rgba(15,23,42,1);
+      border: 1px solid rgba(55,65,81,0.9);
+      overflow: hidden;
+      margin-top: 4px;
+    }
+
+    .lab-meter-fill {
+      height: 100%;
+      width: 70%;
+      border-radius: inherit;
+      background: linear-gradient(90deg,#22c55e,#4ade80);
+      animation: meterPulse 2.6s ease-in-out infinite;
+      transform-origin: left;
+    }
+
+    .lab-metric-pill {
+      font-size: 11px;
+      padding: 4px 7px;
+      border-radius: 999px;
+      border: 1px solid rgba(148,163,184,0.8);
+      background: rgba(15,23,42,0.96);
+      display: inline-flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 6px;
+    }
+
+    @keyframes meterPulse {
+      0%, 100% { transform: scaleX(0.76); }
+      50% { transform: scaleX(1); }
+    }
+
+    /* 导入-修改-导出 通用样式 */
+    .io-card {
+      border-radius: 16px;
+      border: 1px solid rgba(55, 65, 81, 0.9);
+      background: radial-gradient(circle at 0 0, rgba(56, 189, 248, 0.25), transparent 55%),
+        rgba(15, 23, 42, 0.96);
+      padding: 16px 14px;
+      display: grid;
+      grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr);
+      gap: 16px;
+    }
+
+    .io-dual {
+      display: grid;
+      grid-template-columns: minmax(0, 1.4fr) minmax(0, 1.2fr);
+      gap: 14px;
+    }
+
+    .io-with-preview {
+      display: grid;
+      grid-template-columns: minmax(0, 1.65fr) minmax(320px, 0.8fr);
+      gap: 14px;
+      align-items: stretch;
+    }
+
+    .collision-side-panel {
+      border-radius: 16px;
+      border: 1px solid rgba(59, 130, 246, 0.62);
+      background: radial-gradient(circle at 0 0, rgba(34, 197, 94, 0.22), transparent 52%),
+        rgba(15, 23, 42, 0.96);
+      padding: 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      min-height: 100%;
+    }
+
+    .collision-side-title {
+      font-size: 14px;
+      font-weight: 700;
+    }
+
+    .collision-side-note {
+      font-size: 11px;
+      color: var(--text-sub);
+    }
+
+    .collision-side-panel .preview-window {
+      min-height: 360px;
+      grid-template-columns: 1fr;
+    }
+
+    .collision-side-panel .preview-left {
+      min-height: 260px;
+    }
+
+    .io-main-title { font-size: 14px; font-weight: 600; margin-bottom: 4px; }
+
+    .io-main-sub { font-size: 12px; color: var(--text-sub); margin-bottom: 10px; }
+
+    .io-step { font-size: 12px; margin-bottom: 12px; }
+
+    .io-step-label {
+      font-size: 11px;
+      color: var(--accent);
+      font-weight: 600;
+      margin-bottom: 4px;
+    }
+
+    .io-file-input { font-size: 12px; color: #e5e7eb; margin-bottom: 4px; }
+
+    .io-filename { font-size: 11px; color: var(--text-sub); margin-top: 4px; }
+
+    .io-progress-shell {
+      width: 100%;
+      height: 8px;
+      border-radius: 999px;
+      background: rgba(15, 23, 42, 0.9);
+      border: 1px solid rgba(51, 65, 85, 0.9);
+      overflow: hidden;
+      margin: 6px 0;
+    }
+
+    .io-progress-bar {
+      height: 100%;
+      width: 0%;
+      border-radius: 999px;
+      background: linear-gradient(90deg, #22c55e, #4ade80);
+      transition: width 0.2s ease-out;
+    }
+
+    .io-status-text { font-size: 11px; color: var(--text-sub); min-height: 32px; }
+
+    .io-side {
+      font-size: 11px;
+      color: var(--text-sub);
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .io-side-box {
+      border-radius: 12px;
+      border: 1px dashed rgba(148, 163, 184, 0.7);
+      padding: 8px 9px;
+    }
+
+    .io-side-title { font-size: 12px; color: #e5e7eb; margin-bottom: 4px; }
+
+    .io-side-note { font-size: 11px; color: var(--text-sub); }
+
+    .contact-card {
+      border-radius: 16px;
+      border: 1px solid rgba(55, 65, 81, 0.9);
+      background: radial-gradient(circle at 0 0, rgba(56, 189, 248, 0.25), transparent 55%),
+        rgba(15, 23, 42, 0.96);
+      padding: 16px 14px;
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      gap: 12px;
+      align-items: center;
+    }
+
+    .contact-main { max-width: 520px; }
+
+    .contact-main h3 { font-size: 16px; margin-bottom: 4px; }
+
+    .contact-main p { font-size: 13px; color: var(--text-sub); }
+
+    .contact-actions {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      font-size: 12px;
+    }
+
+    .contact-field {
+      padding: 7px 9px;
+      border-radius: 999px;
+      background: rgba(15, 23, 42, 0.9);
+      border: 1px dashed rgba(148, 163, 184, 0.7);
+      color: #e5e7eb;
+    }
+
+    .contact-revit-btn { margin-top: 4px; }
+
+    footer {
+      margin-top: 20px;
+      font-size: 11px;
+      color: var(--text-sub);
+      display: flex;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 8px;
+      border-top: 1px solid rgba(31, 41, 55, 0.9);
+      padding-top: 10px;
+    }
+
+    .btn-back {
+      margin-bottom: 12px;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 12px;
+      cursor: pointer;
+      color: #e5e7eb;
+      border-radius: 999px;
+      padding: 6px 10px;
+      border: 1px solid rgba(148, 163, 184, 0.7);
+      background: rgba(15, 23, 42, 0.9);
+    }
+
+    .btn-back:hover {
+      border-color: var(--accent);
+    }
+
+    /* 实用工具交互区 */
+    .utility-card {
+      border-radius: 18px;
+      border: 1px solid rgba(75,85,99,0.9);
+      background:
+        radial-gradient(circle at 0 0, rgba(37,99,235,0.38), transparent 55%),
+        radial-gradient(circle at 100% 100%, rgba(22,163,74,0.3), transparent 55%),
+        rgba(15,23,42,0.97);
+      padding: 13px 14px 15px;
+      box-shadow: 0 16px 40px rgba(15,23,42,0.9);
+      display: grid;
+      grid-template-columns: minmax(0, 1.4fr) minmax(0,1fr);
+      gap: 14px;
+      font-size: 12px;
+    }
+
+    .utility-tabs {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin: 8px 0 10px;
+    }
+
+    .utility-tab {
+      padding: 4px 10px;
+      border-radius: 999px;
+      border: 1px solid rgba(148,163,184,0.7);
+      background: rgba(15,23,42,0.9);
+      color: #e5e7eb;
+      font-size: 11px;
+      cursor: pointer;
+      transition: background 0.15s, border-color 0.15s, transform 0.1s;
+    }
+
+    .utility-tab-active {
+      border-color: var(--accent);
+      background: radial-gradient(circle at 0 0, rgba(56,189,248,0.55), transparent 60%);
+      transform: translateY(-1px);
+    }
+
+    .utility-desc {
+      border-radius: 12px;
+      border: 1px solid rgba(148,163,184,0.7);
+      background: rgba(15,23,42,0.96);
+      padding: 8px 10px;
+      color: var(--text-sub);
+      font-size: 12px;
+    }
+
+    .utility-side-metrics {
+      border-radius: 14px;
+      border: 1px solid rgba(55,65,81,0.9);
+      background: rgba(15,23,42,0.96);
+      padding: 9px 11px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .utility-metric-row {
+      display: flex;
+      justify-content: space-between;
+      font-size: 11px;
+      color: #e5e7eb;
+    }
+
+    .utility-metric-label { color: var(--text-sub); }
+
+    /* 建筑工具箱（10 个可互动模块中，通用 5 个 + 体育场 5 个） */
+    .toolbox {
+      border-radius: 18px;
+      border: 1px solid rgba(55,65,81,0.9);
+      background:
+        radial-gradient(circle at 0 0, rgba(37,99,235,0.3), transparent 55%),
+        rgba(15,23,42,0.97);
+      padding: 13px 14px 15px;
+      box-shadow: 0 16px 40px rgba(15,23,42,0.9);
+      display: grid;
+      grid-template-columns: minmax(0, 1.5fr) minmax(0,1.1fr);
+      gap: 14px;
+      font-size: 12px;
+    }
+
+    .tool-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0,1fr));
+      gap: 10px;
+    }
+
+    .tool-card {
+      border-radius: 14px;
+      border: 1px solid rgba(75,85,99,0.9);
+      background: rgba(15,23,42,0.96);
+      padding: 9px 10px 10px;
+      cursor: pointer;
+      transition: border-color 0.15s, box-shadow 0.15s, transform 0.1s, background 0.15s;
+    }
+
+    .tool-card-title {
+      font-size: 13px;
+      font-weight: 600;
+      margin-bottom: 2px;
+    }
+
+    .tool-card-desc {
+      font-size: 11px;
+      color: var(--text-sub);
+      margin-bottom: 6px;
+    }
+
+    .tool-card button {
+      font-size: 11px;
+      padding: 4px 9px;
+      border-radius: 999px;
+      border: 1px solid rgba(148,163,184,0.7);
+      background: rgba(15,23,42,0.98);
+      color: #e5e7eb;
+      cursor: pointer;
+    }
+
+    .tool-card-active {
+      border-color: var(--accent);
+      background:
+        radial-gradient(circle at 0 0, rgba(56,189,248,0.4), transparent 60%),
+        rgba(15,23,42,0.96);
+      box-shadow: 0 0 0 1px rgba(56,189,248,0.65);
+      transform: translateY(-1px);
+    }
+
+    .tool-detail {
+      border-radius: 14px;
+      border: 1px solid rgba(75,85,99,0.9);
+      background: rgba(15,23,42,0.98);
+      padding: 10px 11px;
+      font-size: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .tool-detail-title {
+      font-size: 13px;
+      font-weight: 600;
+    }
+
+    .tool-detail-desc {
+      font-size: 12px;
+      color: var(--text-sub);
+    }
+
+    .tool-detail-metrics {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 4px;
+      margin-top: 2px;
+    }
+
+    .tool-detail-metrics span {
+      font-size: 11px;
+      padding: 3px 7px;
+      border-radius: 999px;
+      border: 1px solid rgba(148,163,184,0.7);
+      background: rgba(15,23,42,0.96);
+      color: #e5e7eb;
+    }
+
+    /* 卡片点击高亮（为了“所有功能都有互动反馈”） */
+    .card-clicked {
+      box-shadow: 0 0 0 1px rgba(56,189,248,0.7);
+      border-color: rgba(56,189,248,0.9) !important;
+    }
+
+    @media (max-width: 900px) {
+      .hero { grid-template-columns: minmax(0, 1fr); }
+      .hero-right-card { order: -1; margin-bottom: 10px; }
+      .features-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .modules-grid { grid-template-columns: minmax(0, 1fr); }
+      .stadium-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .steps-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .matrix-grid { grid-template-columns: minmax(0, 1fr); }
+      .io-card { grid-template-columns: minmax(0, 1fr); }
+      .lab-card { grid-template-columns: minmax(0,1fr); }
+      .io-dual,
+      .io-with-preview { grid-template-columns: minmax(0,1fr); }
+      .utility-card { grid-template-columns: minmax(0,1fr); }
+      .toolbox { grid-template-columns: minmax(0,1fr); }
+      .tool-grid { grid-template-columns: minmax(0,1fr); }
+    }
+
+    @media (max-width: 640px) {
+      header { flex-direction: column; align-items: flex-start; gap: 10px; }
+      nav { gap: 12px; font-size: 13px; }
+      .page { padding-inline: 14px; }
+      .features-grid,
+      .modules-grid,
+      .stadium-grid,
+      .steps-grid { grid-template-columns: minmax(0, 1fr); }
+      .contact-card { align-items: flex-start; }
+    }
+  </style>
+</head>
+<body>
+  <!-- 动态背景 -->
+  <div class="global-bg"></div>
+  <div class="bg-grid"></div>
+  <div class="bg-orbit bg-orbit-1"></div>
+  <div class="bg-orbit bg-orbit-2"></div>
+  <div class="bg-particle"></div>
+  <div class="bg-particle"></div>
+  <div class="bg-particle"></div>
+  <div class="bg-particle"></div>
+
+  <div class="page">
+    <header>
+      <div class="logo-wrap">
+        <div class="logo-mark">
+          <!-- 中央“匠”字 -->
+          <span>匠</span>
+        </div>
+        <div class="logo-text-block">
+          <div class="logo-text-main-row">
+            <div class="logo-text-main">ZeroClash</div>
+            <!-- 体育场子图标 -->
+            <div id="stadium-sub-logo" class="stadium-sub-logo" aria-hidden="true">
+              <div class="stadium-sub-ring"></div>
+              <div class="stadium-sub-field"></div>
+              <div class="stadium-sub-rib stadium-sub-rib-1"></div>
+              <div class="stadium-sub-rib stadium-sub-rib-2"></div>
+              <div class="stadium-sub-rib stadium-sub-rib-3"></div>
+            </div>
+          </div>
+          <div class="logo-text-sub">匠心筑馆 · 建筑与体育场机电-结构-建筑综合碰撞优化平台</div>
+        </div>
+      </div>
+      <nav>
+        <a href="#" id="nav-general" class="nav-active">通用建筑模块</a>
+        <a href="#" id="nav-stadium">体育场模块</a>
+        <a href="#" id="nav-io">导入-修改-导出</a>
+        <a href="#" id="nav-contact">预约体验</a>
+        <button class="btn-small-outline" type="button" id="navConsultBtn">
+          立即咨询
+          <span>→</span>
+        </button>
+      </nav>
+    </header>
+
+    <!-- 视图容器 -->
+    <main id="view-container">
+      <!-- ===== 通用建筑视图 ===== -->
+      <div id="view-general" class="view view-active">
+        <!-- Hero -->
+        <section class="hero" id="general-hero">
+          <div class="hero-card">
+            <div class="tagline">
+              <span class="tag-dot"></span>
+              <span>面向通用建筑机电-结构-建筑综合碰撞的自动化治理平台，可扩展体育场模块</span>
+            </div>
+            <h1 class="hero-title">
+              让 <span>AI</span> 参与机电-结构-建筑综合碰撞优化
+            </h1>
+            <p class="hero-subtitle">
+              ZeroClash 以通用建筑为主模块，围绕机电（MEP）与结构、建筑专业之间的综合碰撞，
+              自动执行“导入-分析-修改-导出”的标准化流程，将碰撞控制在工程可接受范围内。
+              体育场项目可在此基础上启用专用子模块。
+            </p>
+
+            <div class="hero-kpis">
+              <div class="kpi-pill">
+                <strong>80%+</strong>
+                <span>重复性碰撞可设定为“自动调整”</span>
+              </div>
+              <div class="kpi-pill">
+                <strong>3 ×</strong>
+                <span>综合碰撞治理迭代效率</span>
+              </div>
+              <div class="kpi-pill">
+                <strong>3 类</strong>
+                <span>RVT / NWC / HTML</span>
+              </div>
+            </div>
+
+            <div class="hero-actions">
+              <button class="btn-primary" type="button" id="heroTrialBtn">
+                预约项目试用（通用建筑）
+                <span>▶</span>
+              </button>
+              <button class="btn-secondary" type="button" id="downloadPdfBtn">
+                下载方案 PDF（占位）
+              </button>
+            </div>
+            <div class="hero-hint">
+              主模块：通用建筑机电-结构-建筑综合碰撞自动优化 · 子模块：体育场专项综合策略增强
+            </div>
+          </div>
+
+          <aside class="hero-right-card" aria-label="通用建筑项目预览">
+            <div class="preview-header">
+              <div class="preview-dots">
+                <span class="preview-dot"></span>
+                <span class="preview-dot"></span>
+                <span class="preview-dot"></span>
+              </div>
+              <span>ZeroClash · 通用建筑项目数字孪生视图</span>
+            </div>
+
+            <div class="preview-window">
+              <div class="preview-left">
+                <div class="preview-mesh"></div>
+                <div class="preview-stats">
+                  <div class="preview-stat-card">
+                    <span style="font-size:10px;color:#9ca3af;">原始综合碰撞</span>
+                    <strong id="gStatTotal">—</strong>
+                    <span style="font-size:10px;color:#9ca3af;" id="gStatNote">等待模型导入</span>
+                  </div>
+                  <div class="preview-stat-card">
+                    <span style="font-size:10px;color:#9ca3af;">已自动调整</span>
+                    <strong id="gStatAuto">—</strong>
+                    <span style="font-size:10px;color:#22c55e;">规则 + AI 决策</span>
+                  </div>
+                  <div class="preview-stat-card">
+                    <span style="font-size:10px;color:#9ca3af;">待人工复核</span>
+                    <strong id="gStatRemain">—</strong>
+                    <span style="font-size:10px;color:#9ca3af;">关键区域</span>
+                  </div>
+                </div>
+              </div>
+              <div class="preview-right">
+                <div class="preview-step">
+                  <div class="preview-step-badge">1</div>
+                  <div>
+                    <div class="preview-step-title">读取综合碰撞数据</div>
+                    <div>从 Revit / Navisworks 导入通用建筑多专业模型及 HTML 碰撞报告，识别机电、结构、建筑参与构件。</div>
+                  </div>
+                </div>
+                <div class="preview-step">
+                  <div class="preview-step-badge">2</div>
+                  <div>
+                    <div class="preview-step-title">AI 参与综合决策</div>
+                    <div>结合系统优先级、净高约束与结构安全边界，生成“谁让谁、往哪让、让多少”的调整方案，并执行批量修改。</div>
+                  </div>
+                </div>
+                <div class="preview-step">
+                  <div class="preview-step-badge">3</div>
+                  <div>
+                    <div class="preview-step-title">批量调整与导出</div>
+                    <div>展示修改进度和日志，最终导出调整后的文件，形成可追溯的综合碰撞治理链路。</div>
+                  </div>
+                </div>
+                <div class="preview-ai-rate" id="gAiRate">
+                  AI 自动调整覆盖率：—
+                </div>
+              </div>
+            </div>
+          </aside>
+        </section>
+
+        <!-- 通用功能亮点 -->
+        <section id="general-features">
+          <h2 class="section-title">功能亮点（通用建筑主模块）</h2>
+          <p class="section-subtitle">
+            ZeroClash 将机电综合、结构校核与建筑空间控制三类经验固化为规则，
+            引入 AI 做复杂判断，支持 RVT、NWC 与 HTML Navisworks 碰撞报告文件的导入与自动调整。
+          </p>
+
+          <div class="features-grid">
+            <article class="feature-card">
+              <div class="feature-tag">ENGINE</div>
+              <div class="feature-title">机电-结构-建筑综合规则引擎</div>
+              <p class="feature-desc">
+                将“主干不动、支管服从”“结构优先”“公共区域净高优先”等综合策略参数化，
+                形成可复用规则模板。
+              </p>
+              <ul class="feature-list">
+                <li>面向多专业碰撞的统一规则库</li>
+                <li>支持项目 / 分区级策略继承</li>
+              </ul>
+            </article>
+
+            <article class="feature-card">
+              <div class="feature-tag">FORMAT</div>
+              <div class="feature-title">多格式文件导入支持</div>
+              <p class="feature-desc">
+                支持从 Revit（.rvt）、Navisworks 模型（.nwc）以及 HTML 格式综合碰撞报告中导入数据，
+                统一进入导入-分析-修改-导出的治理流程。
+              </p>
+              <ul class="feature-list">
+                <li>拖拽 / 选择 RVT / NWC / HTML</li>
+                <li>一套界面覆盖不同阶段数据</li>
+              </ul>
+            </article>
+
+            <article class="feature-card">
+              <div class="feature-tag">GOVERN</div>
+              <div class="feature-title">可视化复核与治理闭环</div>
+              <p class="feature-desc">
+                为每一次自动调整记录日志与状态，可按专业、楼层、责任单位汇总碰撞治理成果，
+                便于对接项目管理。
+              </p>
+              <ul class="feature-list">
+                <li>形成“问题-措施-结果”的可追溯链</li>
+                <li>可扩展至项目级 KPI 统计看板</li>
+              </ul>
+            </article>
+          </div>
+        </section>
+
+        <!-- 平台能力矩阵 -->
+        <section id="general-matrix">
+          <h2 class="section-title">平台能力矩阵</h2>
+          <p class="section-subtitle">
+            ZeroClash 支持多项目、多分区、多角色协作，预留与企业 BIM 平台、项目管理系统打通的接口能力，
+            更适合作为“上市级”产品矩阵的一部分。
+          </p>
+
+          <div class="matrix-grid">
+            <article class="matrix-card">
+              <div class="matrix-tag-line">PROJECT GOVERNANCE</div>
+              <div class="matrix-title">项目级综合碰撞治理视图</div>
+              <p class="feature-desc">
+                按项目、分区、专业维度统计综合碰撞数量、自动调整比例与待复核清单，
+                可扩展接入成本、工期等指标。
+              </p>
+              <div class="matrix-badges">
+                <span class="matrix-badge">按分区治理统计</span>
+                <span class="matrix-badge">批次对比</span>
+                <span class="matrix-badge">治理 KPI</span>
+              </div>
+            </article>
+
+            <article class="matrix-card">
+              <div class="matrix-tag-line">COLLABORATION</div>
+              <div class="matrix-title">多角色协同与分包对接</div>
+              <p class="feature-desc">
+                预留“设计单位 / 施工单位 / 运维方”等角色入口，未来可与账号体系打通，
+                支持不同单位查看各自责任区的碰撞与调整记录。
+              </p>
+              <div class="matrix-badges">
+                <span class="matrix-badge">角色视图</span>
+                <span class="matrix-badge">责任区划分</span>
+                <span class="matrix-badge">导出责任清单</span>
+              </div>
+            </article>
+
+            <article class="matrix-card">
+              <div class="matrix-tag-line">OPEN PLATFORM</div>
+              <div class="matrix-title">接口与插件能力（预留）</div>
+              <p class="feature-desc">
+                预留与 Revit 插件、Navisworks 插件及企业自有平台的对接位置，
+                未来可通过 API 协议实现在线与本地工具之间的双向联动。
+              </p>
+              <div class="matrix-badges">
+                <span class="matrix-badge">Revit 插件对接</span>
+                <span class="matrix-badge">Navisworks 插件</span>
+                <span class="matrix-badge">开放 API</span>
+              </div>
+            </article>
+          </div>
+        </section>
+
+        <!-- 高级与实用功能 -->
+        <section id="advanced-features">
+          <h2 class="section-title">高级与实用功能（规划中）</h2>
+          <p class="section-subtitle">
+            面向产品正式上线和大规模落地，ZeroClash 预留了一系列管理和实施侧的高级功能，
+            便于和匠心筑馆未来的产品路线同步演进。
+          </p>
+
+          <div class="features-grid">
+            <article class="feature-card">
+              <div class="feature-tag">VERSION</div>
+              <div class="feature-title">规则版本管理与一键回滚</div>
+              <p class="feature-desc">
+                支持不同项目、分区、阶段的综合规则版本管理，记录每次调整的差异，
+                需要时可回滚到任意一次调整前的状态。
+              </p>
+              <ul class="feature-list">
+                <li>版本对比与变更说明</li>
+                <li>重大调整设为“里程碑版本”</li>
+              </ul>
+            </article>
+
+            <article class="feature-card">
+              <div class="feature-tag">PACKAGE</div>
+              <div class="feature-title">责任清单与 Navisworks 整改包</div>
+              <p class="feature-desc">
+                在综合碰撞治理的同时，自动生成按单位、专业分组的责任清单，
+                并打包为 Navisworks 批注文件及 Excel 汇总。
+              </p>
+              <ul class="feature-list">
+                <li>导出“单位-专业-问题-措施”清单</li>
+                <li>一键下发给各参与方复核</li>
+              </ul>
+            </article>
+
+            <article class="feature-card">
+              <div class="feature-tag">MODEL</div>
+              <div class="feature-title">模型裁剪与轻量化（预留）</div>
+              <p class="feature-desc">
+                为应对大体量项目，预留了按楼层、分区、系统的模型裁剪与轻量化能力，
+                仅保留与综合碰撞有关的关键构件，提升打开与操作效率。
+              </p>
+              <ul class="feature-list">
+                <li>局部区域“打包给分包”</li>
+                <li>可视化显示裁剪范围</li>
+              </ul>
+            </article>
+          </div>
+        </section>
+
+        <!-- 通用建筑工具箱（5 个工具） -->
+        <section id="general-toolbox">
+          <h2 class="section-title">通用建筑工具箱 · 交互演示</h2>
+          <p class="section-subtitle">
+            这里展示 5 个典型的通用建筑工具模块，可用来给甲方或团队演示
+            ZeroClash 在“工具层”的可用性与可扩展性。
+          </p>
+
+          <div class="toolbox">
+            <div class="tool-grid" id="gToolGrid">
+              <article class="tool-card" data-tool="layering">
+                <div class="tool-card-title">管线分层布置助手</div>
+                <p class="tool-card-desc">按“强电 / 弱电 / 给排水 / 通风”分层布置，自动检测是否越层或打架。</p>
+                <button type="button">模拟应用到标准层</button>
+              </article>
+              <article class="tool-card" data-tool="shaft">
+                <div class="tool-card-title">竖井容量与预留校核</div>
+                <p class="tool-card-desc">检查竖井截面是否满足当前机电系统数量，并提醒需要提前扩容的井道。</p>
+                <button type="button">模拟校核一组竖井</button>
+              </article>
+              <article class="tool-card" data-tool="core">
+                <div class="tool-card-title">核心筒机电集中区治理</div>
+                <p class="tool-card-desc">对核心筒周边的密集管线进行自动梳理，减小局部拥挤度。</p>
+                <button type="button">模拟优化核心筒</button>
+              </article>
+              <article class="tool-card" data-tool="facade">
+                <div class="tool-card-title">幕墙与机电接口管理</div>
+                <p class="tool-card-desc">识别幕墙附近设备与洞口，避免机电构件占用幕墙维护空间。</p>
+                <button type="button">模拟检查幕墙带</button>
+              </article>
+              <article class="tool-card" data-tool="basement">
+                <div class="tool-card-title">地下室抗渗与排水综合</div>
+                <p class="tool-card-desc">结合地下室集水坑、排水管与结构板厚度，对抗渗与排水综合进行提醒。</p>
+                <button type="button">模拟校核地下室</button>
+              </article>
+            </div>
+            <aside class="tool-detail" id="gToolDetail">
+              <!-- JS 初始化填充 -->
+            </aside>
+          </div>
+        </section>
+
+        <!-- 实用工具 · 交互演示 -->
+        <section id="utility-tools">
+          <h2 class="section-title">实用工具 · 交互演示</h2>
+          <p class="section-subtitle">
+            这里模拟一些上线后会常用的工具：碰撞筛选、净高控制线与责任区划分。
+            通过简单交互，可以向项目干系人展示 ZeroClash 的操作体验。
+          </p>
+
+          <div class="utility-card">
+            <div>
+              <div class="lab-title">选择一个工具查看说明</div>
+              <div class="utility-tabs">
+                <button type="button" class="utility-tab utility-tab-active" data-util-mode="filter">
+                  碰撞筛选器
+                </button>
+                <button type="button" class="utility-tab" data-util-mode="clearance">
+                  净高控制线
+                </button>
+                <button type="button" class="utility-tab" data-util-mode="zone">
+                  责任区划分
+                </button>
+              </div>
+              <div class="utility-desc" id="utilityDesc">
+                碰撞筛选器可以按专业、楼层、系统类型等条件快速过滤综合碰撞，
+                例如只看“机电-结构”或只看“公共区域净高相关”的问题，用于快速定位关键冲突。
+              </div>
+            </div>
+            <aside class="utility-side-metrics">
+              <div class="utility-metric-row">
+                <span class="utility-metric-label">当前工具：</span>
+                <span id="utilityToolName">碰撞筛选器</span>
+              </div>
+              <div class="utility-metric-row">
+                <span class="utility-metric-label">预计减少人工筛选工作：</span>
+                <span id="utilityWorkload">≈ 60%</span>
+              </div>
+              <div class="utility-metric-row">
+                <span class="utility-metric-label">适用阶段：</span>
+                <span id="utilityStage">综合碰撞复核阶段</span>
+              </div>
+            </aside>
+          </div>
+        </section>
+
+        <!-- ZeroClash 实验室 -->
+        <section id="general-lab">
+          <h2 class="section-title">ZeroClash 实验室 · 综合策略演示</h2>
+          <p class="section-subtitle">
+            这里是面向演示和方案汇报的“综合策略实验室”，可以快速切换不同算法风格和治理偏好，
+            在真实项目中可映射为参数模板。
+          </p>
+
+          <div class="lab-card">
+            <div>
+              <div class="lab-title">综合模式切换</div>
+              <div class="lab-sub">
+                选择不同模式，右侧会展示指标变化——例如更强调碰撞消减率、更偏向净高保护或更看重施工可落地性。
+              </div>
+
+              <div class="lab-toggle-group" id="labToggleGroup">
+                <button type="button" class="pill-toggle pill-toggle-active" data-lab-mode="balance">
+                  <span class="small-dot"></span>
+                  标准模式
+                </button>
+                <button type="button" class="pill-toggle" data-lab-mode="aggressive">
+                  <span class="small-dot"></span>
+                  激进减碰模式
+                </button>
+                <button type="button" class="pill-toggle" data-lab-mode="clearance">
+                  <span class="small-dot"></span>
+                  净高保护模式
+                </button>
+                <button type="button" class="pill-toggle" data-lab-mode="construct">
+                  <span class="small-dot"></span>
+                  施工友好模式
+                </button>
+              </div>
+
+              <div class="lab-mode-desc" id="labModeDesc">
+                标准模式下，ZeroClash 在“综合碰撞消减率”和“施工可落地性”之间做平衡。
+                适合作为通用建筑与体育场项目的默认模板，便于形成企业级统一标准。
+              </div>
+            </div>
+
+            <aside class="lab-side">
+              <div>
+                <div class="lab-side-title">可视化指标预览</div>
+                <div class="lab-metric-pill">
+                  <span>预计综合碰撞消减率</span>
+                  <strong id="labMetricCollision">≈ 82%</strong>
+                </div>
+                <div class="lab-meter">
+                  <div class="lab-meter-fill" id="labMeterFill"></div>
+                </div>
+              </div>
+              <div>
+                <div class="lab-side-title">策略侧重</div>
+                <div style="font-size:11px;color:var(--text-sub);">
+                  当前模式：<span id="labModeTag" style="color:#e5e7eb;font-weight:600;">平衡 · 默认推荐</span><br/>
+                  真实项目中，可以将此处保存为“策略模板”，按楼层或分区进行应用。
+                </div>
+              </div>
+            </aside>
+          </div>
+        </section>
+
+        <!-- 模块选择 -->
+        <section id="general-modules">
+          <h2 class="section-title">建筑类型模块选择</h2>
+          <p class="section-subtitle">
+            ZeroClash 分为两个模块：<strong>通用建筑机电-结构-建筑综合碰撞模块（主模块）</strong>与
+            <strong>体育场专用综合碰撞模块（子模块）</strong>。默认打开即为通用模块，可根据项目类型切换。
+          </p>
+
+          <div class="modules-grid">
+            <article class="module-card" id="module-general-card">
+              <div class="module-tag">GENERAL BUILDINGS</div>
+              <div class="module-title">通用建筑综合碰撞模块（当前）</div>
+              <p class="module-desc">
+                适用于办公楼、商业综合体、医疗、住宅等常规建筑，围绕机电、结构与建筑空间之间的碰撞，
+                提供规则引擎、多格式导入、自动调整与导出等能力。
+              </p>
+              <div class="module-link-hint">当前即为该模块，你可以继续向下查看导入-修改-导出体验。</div>
+            </article>
+
+            <article class="module-card" id="module-stadium-card">
+              <div class="module-tag">STADIUMS</div>
+              <div class="module-title">体育场专用综合碰撞模块（进入新界面）</div>
+              <p class="module-desc">
+                面向匠心筑馆这类大型体育场项目的屋盖钢结构、看台、内场与后勤分区，
+                针对机电-结构-建筑综合碰撞进行专项策略优化展示。
+              </p>
+              <div class="module-link-hint">点击此卡片，切换到体育场专用界面，并在左上角展示体育场子图标。</div>
+            </article>
+          </div>
+        </section>
+
+        <!-- 通用导入-修改-导出：模型 + Navisworks 报告 -->
+        <section id="general-io">
+          <h2 class="section-title">通用建筑：导入 - 修改 - 导出（模型 & Navisworks 报告）</h2>
+          <p class="section-subtitle">
+            左侧模块用于处理 <strong>.rvt / .nwc</strong> 模型，右侧模块专门处理 <strong>Navisworks HTML 综合碰撞报告</strong>。
+            四个按钮均可点击，展示完整的导入-修改-导出流程。
+          </p>
+
+          <div class="io-with-preview">
+          <div class="io-dual">
+            <!-- 模型模块 -->
+            <div class="io-card">
+              <div>
+                <div class="io-main-title">1. 导入通用建筑模型文件</div>
+                <div class="io-main-sub">
+                  请选择一个通用建筑项目模型文件，平台会显示文件名并启动修改进度条。所有处理都在你的浏览器本地执行。
+                </div>
+
+                <div class="io-step">
+                  <div class="io-step-label">STEP 1 · 选择模型文件</div>
+                  <input
+                    id="g-inputFile"
+                    class="io-file-input"
+                    type="file"
+                    accept=".rvt,.RVT,.nwc,.NWC"
+                  />
+                  <div class="io-filename" id="g-inputFileName">尚未选择文件</div>
+                </div>
+
+                <div class="io-step">
+                  <div class="io-step-label">STEP 2 · 启动 AI 调整流程</div>
+                  <button class="btn-primary" type="button" id="g-runBtn">
+                    开始 AI 调整（通用建筑模型）
+                  </button>
+                  <div class="io-progress-shell">
+                    <div class="io-progress-bar" id="g-progressBar"></div>
+                  </div>
+                  <div class="io-status-text" id="g-statusText">
+                    等待开始。选择文件后点击“开始 AI 调整”将看到综合碰撞消减过程展示。
+                  </div>
+                </div>
+
+                <div class="io-step">
+                  <div class="io-step-label">STEP 3 · 导出“调整后”模型</div>
+                  <button class="btn-secondary" type="button" id="g-exportBtn">
+                    导出“调整后”模型文件
+                  </button>
+                  <div class="io-status-text">
+                    导出时，平台会以“原文件名 + _ZeroClash_Modified”生成一份新文件，例如
+                    <code>building.rvt</code> 会导出为 <code>building_ZeroClash_Modified.rvt</code>。
+                  </div>
+                </div>
+              </div>
+
+              <aside class="io-side">
+                <div class="io-side-box">
+                  <div class="io-side-title">处理说明（模型）</div>
+                  <div class="io-side-note">
+                    · 面向机电-结构-建筑三专业综合碰撞。<br/>
+                    · 可在真实项目中扩展更多规则参数，例如机电干线优先级、结构保护区、吊顶高度控制等。<br/>
+                    · 当前网页聚焦展示完整的模型导入-修改-导出体验。
+                  </div>
+                </div>
+                <div class="io-side-box">
+                  <div class="io-side-title">支持模型类型</div>
+                  <div class="io-side-note">
+                    · Revit 模型：<strong>.rvt</strong><br/>
+                    · Navisworks 模型：<strong>.nwc</strong>
+                  </div>
+                </div>
+              </aside>
+            </div>
+
+            <!-- Navisworks 报告模块 -->
+            <div class="io-card">
+              <div>
+                <div class="io-main-title">2. Navisworks 综合碰撞报告 · 导入与导出</div>
+                <div class="io-main-sub">
+                  当你已经在 Navisworks 中完成碰撞检测后，可在此导入 HTML 形式的综合碰撞报告，
+                  通过 ZeroClash 生成一份“已调整版本”的对照报告。
+                </div>
+
+                <div class="io-step">
+                  <div class="io-step-label">STEP 1 · 选择 Navisworks 报告</div>
+                  <input
+                    id="gn-inputFile"
+                    class="io-file-input"
+                    type="file"
+                    accept=".html,.HTML"
+                  />
+                  <div class="io-filename" id="gn-inputFileName">尚未选择报告文件</div>
+                </div>
+
+                <div class="io-step">
+                  <div class="io-step-label">STEP 2 · 启动 AI 调整（报告）</div>
+                  <button class="btn-primary" type="button" id="gn-runBtn">
+                    开始 AI 调整（Navisworks 报告）
+                  </button>
+                  <div class="io-progress-shell">
+                    <div class="io-progress-bar" id="gn-progressBar"></div>
+                  </div>
+                  <div class="io-status-text" id="gn-statusText">
+                    等待开始。选择 Navisworks HTML 报告后，将按条目展示综合碰撞调整进度。
+                  </div>
+                </div>
+
+                <div class="io-step">
+                  <div class="io-step-label">STEP 3 · 导出“调整后”报告</div>
+                  <button class="btn-secondary" type="button" id="gn-exportBtn">
+                    导出“调整后”Navisworks 报告
+                  </button>
+                  <div class="io-status-text">
+                    导出的报告同样会以 <code>_ZeroClash_Modified</code> 作为后缀，便于与你原始报告进行对比归档。
+                  </div>
+                </div>
+              </div>
+
+              <aside class="io-side">
+                <div class="io-side-box">
+                  <div class="io-side-title">处理说明（报告）</div>
+                  <div class="io-side-note">
+                    · 以 Navisworks 碰撞条目为基础，展示“已自动调整 / 待人工复核”等统计视图。<br/>
+                    · 可在真实系统中扩展为点击条目跳转模型定位。<br/>
+                    · 当前页面聚焦导入-修改-导出流程展示。
+                  </div>
+                </div>
+                <div class="io-side-box">
+                  <div class="io-side-title">支持报告类型</div>
+                  <div class="io-side-note">
+                    · Navisworks HTML 综合碰撞报告：<strong>.html</strong><br/>
+                    · 未来可扩展至 <strong>.xml / .csv</strong> 等格式。
+                  </div>
+                </div>
+              </aside>
+            </div>
+          </div>
+          <aside class="collision-side-panel" aria-label="通用建筑碰撞点显示区">
+            <div>
+              <div class="collision-side-title">碰撞点显示区</div>
+              <div class="collision-side-note">与左侧碰撞检查流程同步，红点用于显示机电、结构与建筑空间的关键冲突位置。</div>
+            </div>
+            <div class="preview-window">
+              <div class="preview-left">
+                <div class="preview-mesh"></div>
+                <div class="preview-clashes" id="gPreviewClashes"></div>
+                <div class="preview-stats">
+                  <div class="preview-stat-card">
+                    <span style="font-size:10px;color:#9ca3af;">原始综合碰撞</span>
+                    <strong>36</strong>
+                    <span style="font-size:10px;color:#9ca3af;">模型/报告检查后定位</span>
+                  </div>
+                  <div class="preview-stat-card">
+                    <span style="font-size:10px;color:#9ca3af;">自动调整</span>
+                    <strong>29</strong>
+                    <span style="font-size:10px;color:#22c55e;">规则 + AI</span>
+                  </div>
+                  <div class="preview-stat-card">
+                    <span style="font-size:10px;color:#9ca3af;">待复核</span>
+                    <strong>7</strong>
+                    <span style="font-size:10px;color:#9ca3af;">关键区域</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </aside>
+          </div>
+        </section>
+
+        <!-- 联系 / 试用 -->
+        <section id="general-contact">
+          <div class="contact-card">
+            <div class="contact-main">
+              <h3>想在通用建筑或体育场项目中试一试 ZeroClash？</h3>
+              <p>
+                建议从一个典型分区（如某栋楼一层或体育场某看台）开始试点，我们协助你设计机电-结构-建筑综合规则，
+                并通过类似本页面的界面向管理层展示导入-修改-导出的自动化治理流程。
+              </p>
+            </div>
+            <div class="contact-actions">
+              <div class="contact-field">
+                项目交流邮箱：<strong>zero-clash@example.com</strong>
+              </div>
+              <div class="contact-field">
+                微信/钉钉：请备注「匠心筑馆 · ZeroClash 试用 + 公司名称」
+              </div>
+              <div class="contact-field contact-revit-btn">
+                <button class="btn-small-outline" type="button" id="openRevitBtn">
+                  打开 Revit（演示按钮）
+                </button>
+                <div style="font-size:11px;color:var(--text-sub);margin-top:4px;">
+                  浏览器出于安全限制，通常无法直接启动本地 Revit。点击后会尝试调用 <code>revit:</code> 协议，
+                  你仍然需要手动在电脑中打开 Revit。
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+      </div><!-- /view-general -->
+
+      <!-- ===== 体育场视图（新界面） ===== -->
+      <div id="view-stadium" class="view">
+        <button class="btn-back" type="button" id="backToGeneral">
+          ← 返回通用建筑模块
+        </button>
+
+        <!-- 体育场 Hero -->
+        <section class="hero" id="stadium-hero">
+          <div class="hero-card">
+            <div class="tagline">
+              <span class="tag-dot"></span>
+              <span>匠心筑馆 · 针对大型体育场机电-结构-建筑综合碰撞的增强模块</span>
+            </div>
+            <h1 class="hero-title">
+              一套 <span>AI</span> 流程，完成体育场机电-结构-建筑综合碰撞优化
+            </h1>
+            <p class="hero-subtitle">
+              在通用建筑模块基础上，体育场模块针对屋盖钢结构、看台、内场与后勤区，
+              提供分区化的综合碰撞策略，将全场碰撞压降至工程可控范围，并兼顾赛事与演艺模式切换。
+            </p>
+
+            <div class="hero-kpis">
+              <div class="kpi-pill">
+                <strong>20k+</strong>
+                <span>全场综合碰撞点集中治理（示意值）</span>
+              </div>
+              <div class="kpi-pill">
+                <strong>3</strong>
+                <span>屋盖 / 看台 / 后勤 三大分区策略</span>
+              </div>
+              <div class="kpi-pill">
+                <strong>1</strong>
+                <span>一键流程：导入-修改-导出</span>
+              </div>
+            </div>
+
+            <div class="hero-actions">
+              <button class="btn-primary" type="button" id="stadiumTrialBtn">
+                预约体育场项目试用
+                <span>▶</span>
+              </button>
+            </div>
+            <div class="hero-hint">
+              体育场模块基于通用规则引擎，叠加屋盖钢结构与看台人流的专用约束，用于体育建筑场景演示。
+            </div>
+          </div>
+
+          <aside class="hero-right-card" aria-label="体育场项目数字孪生预览">
+            <div class="preview-header">
+              <div class="preview-dots">
+                <span class="preview-dot"></span>
+                <span class="preview-dot"></span>
+                <span class="preview-dot"></span>
+              </div>
+              <span>ZeroClash · 体育场项目数字孪生视图</span>
+            </div>
+
+            <div class="preview-window">
+              <div class="preview-left">
+                <div class="preview-mesh"></div>
+                <div class="preview-stats">
+                  <div class="preview-stat-card">
+                    <span style="font-size:10px;color:#9ca3af;">原始综合碰撞</span>
+                    <strong id="sStatTotal">—</strong>
+                    <span style="font-size:10px;color:#9ca3af;" id="sStatNote">等待模型导入</span>
+                  </div>
+                  <div class="preview-stat-card">
+                    <span style="font-size:10px;color:#9ca3af;">已自动调整</span>
+                    <strong id="sStatAuto">—</strong>
+                    <span style="font-size:10px;color:#22c55e;">分区策略 + AI</span>
+                  </div>
+                  <div class="preview-stat-card">
+                    <span style="font-size:10px;color:#9ca3af;">待人工复核</span>
+                    <strong id="sStatRemain">—</strong>
+                    <span style="font-size:10px;color:#9ca3af;">屋盖 / 看台重点区域</span>
+                  </div>
+                </div>
+              </div>
+              <div class="preview-right">
+                <div class="preview-step">
+                  <div class="preview-step-badge">1</div>
+                  <div>
+                    <div class="preview-step-title">按分区读取综合碰撞</div>
+                    <div>将体育场划分为屋盖、看台、内场、后勤区等分区，分组读取机电-结构-建筑综合碰撞数据。</div>
+                  </div>
+                </div>
+                <div class="preview-step">
+                  <div class="preview-step-badge">2</div>
+                  <div>
+                    <div class="preview-step-title">体育场专用综合规则</div>
+                    <div>屋盖保主桁架优先，看台保证行走净高，内场与后勤区按系统重要性排序调整。</div>
+                  </div>
+                </div>
+                <div class="preview-step">
+                  <div class="preview-step-badge">3</div>
+                  <div>
+                    <div class="preview-step-title">统一导出场馆成果</div>
+                    <div>将调整结果汇总到统一模型中，对接后续施工图、深化与运维数字孪生。</div>
+                  </div>
+                </div>
+                <div class="preview-ai-rate" id="sAiRate">
+                  AI 自动调整覆盖率：—
+                </div>
+              </div>
+            </div>
+          </aside>
+        </section>
+
+        <!-- 体育场专用模块说明 -->
+        <section id="stadium-features">
+          <h2 class="section-title">体育场机电-结构-建筑综合碰撞 · 专用模块</h2>
+          <p class="section-subtitle">
+            面向屋盖钢结构、看台、内场与商业配套等复杂区域，
+            体育场模块提供分区化的综合碰撞策略与自动调整流程。
+          </p>
+
+          <div class="stadium-grid">
+            <article class="stadium-card">
+              <div class="stadium-badge">ROOF & BOWL</div>
+              <div class="stadium-title">屋盖钢结构与看台区域</div>
+              <p class="stadium-desc">
+                针对<span>屋盖桁架、猫道、看台下空间</span>的机电-结构-建筑综合碰撞，
+                提供专门的净高与避让策略，在调整日志中强调“抬高支管、绕过主桁架”等动作。
+              </p>
+            </article>
+
+            <article class="stadium-card">
+              <div class="stadium-badge">CONCOURSE</div>
+              <div class="stadium-title">环形公共大厅与流线</div>
+              <p class="stadium-desc">
+                针对<span>人流密集的内环大厅、交通核</span>，可配置弱电、给排水与通风系统的优先级，
+                确保通行净高与舒适度。
+              </p>
+            </article>
+
+            <article class="stadium-card">
+              <div class="stadium-badge">BACK OF HOUSE</div>
+              <div class="stadium-title">后勤区与机房集成</div>
+              <p class="stadium-desc">
+                对机房群、后勤走道、车库等区域，可设置机电干线与支路的不同“让管规则”，
+                在调整日志中展示“主干不动、支路服从”的策略。
+              </p>
+            </article>
+          </div>
+        </section>
+
+        <!-- 体育场工具箱（5 个工具） -->
+        <section id="stadium-toolbox">
+          <h2 class="section-title">体育场专用工具箱 · 交互演示</h2>
+          <p class="section-subtitle">
+            这里是体育场场景下的 5 个专项工具模块，用于展示 ZeroClash 在体育建筑领域的落地能力。
+          </p>
+
+          <div class="toolbox">
+            <div class="tool-grid" id="sToolGrid">
+              <article class="tool-card" data-tool="concourse">
+                <div class="tool-card-title">环形走道人流净高校核</div>
+                <p class="tool-card-desc">针对内环公共走道自动扫描净高，标记低于控制线的管线与设备。</p>
+                <button type="button">模拟校核一圈走道</button>
+              </article>
+              <article class="tool-card" data-tool="bowlSmoke">
+                <div class="tool-card-title">看台下排烟与补风协调</div>
+                <p class="tool-card-desc">校核排烟风管与补风口在看台下空间的布置，避免互相遮挡。</p>
+                <button type="button">模拟检查看台下区</button>
+              </article>
+              <article class="tool-card" data-tool="roofLight">
+                <div class="tool-card-title">屋盖投光灯与结构布置</div>
+                <p class="tool-card-desc">检查屋盖投光灯、音响吊挂与钢结构杆件之间的安全距离。</p>
+                <button type="button">模拟优化屋盖区</button>
+              </article>
+              <article class="tool-card" data-tool="screenAv">
+                <div class="tool-card-title">大屏与音视频机电接口</div>
+                <p class="tool-card-desc">对大屏、音响、转播机位等设备接口进行集中梳理与碰撞检查。</p>
+                <button type="button">模拟梳理中控区</button>
+              </article>
+              <article class="tool-card" data-tool="modeSwitch">
+                <div class="tool-card-title">赛事 / 演艺模式切换辅助</div>
+                <p class="tool-card-desc">对赛事与演艺两种工况下的机电调整范围进行预估和标记。</p>
+                <button type="button">模拟切换到演艺模式</button>
+              </article>
+            </div>
+            <aside class="tool-detail" id="sToolDetail">
+              <!-- JS 初始化填充 -->
+            </aside>
+          </div>
+        </section>
+
+        <!-- 体育场流程 -->
+        <section id="stadium-workflow">
+          <h2 class="section-title">体育场典型使用流程</h2>
+          <p class="section-subtitle">
+            在体育场模块中，导入-修改-导出流程围绕“分区 + 系统优先级”展开，
+            便于在屋盖、看台和内场之间做整体权衡。
+          </p>
+          <div class="steps-grid">
+            <div class="step-card">
+              <div class="step-index">STEP 01</div>
+              <div class="step-title">按分区导入</div>
+              <div class="step-desc">
+                导入包含体育场全场的 Revit / Navisworks 文件或 HTML 综合碰撞报告，识别并标记各分区。
+              </div>
+            </div>
+            <div class="step-card">
+              <div class="step-index">STEP 02</div>
+              <div class="step-title">配置体育场综合规则</div>
+              <div class="step-desc">
+                根据屋盖、看台、内场、后勤区等分区，设置机电与结构、建筑之间的系统优先级与“谁让谁”策略。
+              </div>
+            </div>
+            <div class="step-card">
+              <div class="step-index">STEP 03</div>
+              <div class="step-title">执行 AI 调整</div>
+              <div class="step-desc">
+                点击“开始 AI 调整（体育场）”，系统按分区批量处理综合碰撞并生成调整日志。
+              </div>
+            </div>
+            <div class="step-card">
+              <div class="step-index">STEP 04</div>
+              <div class="step-title">导出场馆成果</div>
+              <div class="step-desc">
+                导出一份带有 “_ZeroClash_Modified” 后缀的体育场成果文件，用于后续深化和运维。
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- 体育场导入-修改-导出：模型 + Navisworks 报告 -->
+        <section id="stadium-io">
+          <h2 class="section-title">体育场：导入 - 修改 - 导出（模型 & Navisworks 报告）</h2>
+          <p class="section-subtitle">
+            左侧模块用于处理体育场全场或分区的 <strong>.rvt / .nwc</strong> 模型，
+            右侧模块用于处理 Navisworks 生成的体育场综合碰撞报告，两者共享同一套体育场专用规则。
+          </p>
+
+          <div class="io-with-preview">
+          <div class="io-dual">
+            <!-- 体育场模型模块 -->
+            <div class="io-card">
+              <div>
+                <div class="io-main-title">1. 导入体育场模型文件</div>
+                <div class="io-main-sub">
+                  请选择一个体育场相关的 Revit / Navisworks 模型，平台会结合屋盖、看台、内场分区执行综合碰撞调整。
+                </div>
+
+                <div class="io-step">
+                  <div class="io-step-label">STEP 1 · 选择体育场模型</div>
+                  <input
+                    id="s-inputFile"
+                    class="io-file-input"
+                    type="file"
+                    accept=".rvt,.RVT,.nwc,.NWC"
+                  />
+                  <div class="io-filename" id="s-inputFileName">尚未选择模型文件</div>
+                </div>
+
+                <div class="io-step">
+                  <div class="io-step-label">STEP 2 · 启动 AI 调整（体育场）</div>
+                  <button class="btn-primary" type="button" id="s-runBtn">
+                    开始 AI 调整（体育场模型）
+                  </button>
+                  <div class="io-progress-shell">
+                    <div class="io-progress-bar" id="s-progressBar"></div>
+                  </div>
+                  <div class="io-status-text" id="s-statusText">
+                    等待开始。选择体育场模型后，系统会展示按分区统计的综合碰撞压降过程。
+                  </div>
+                </div>
+
+                <div class="io-step">
+                  <div class="io-step-label">STEP 3 · 导出体育场“调整后”模型</div>
+                  <button class="btn-secondary" type="button" id="s-exportBtn">
+                    导出“调整后”场馆模型
+                  </button>
+                  <div class="io-status-text">
+                    导出的模型同样使用 <code>_ZeroClash_Modified</code> 后缀，方便与你的原始体育场模型进行对比。
+                  </div>
+                </div>
+              </div>
+
+              <aside class="io-side">
+                <div class="io-side-box">
+                  <div class="io-side-title">处理说明（体育场模型）</div>
+                  <div class="io-side-note">
+                    · 屋盖保主桁架与结构刚度，看台保证观众行走净高。<br/>
+                    · 内场与后勤区可按系统重要性排序调整。<br/>
+                    · 可与赛事 / 演艺工况联动，形成多场景综合校核。
+                  </div>
+                </div>
+                <div class="io-side-box">
+                  <div class="io-side-title">支持模型类型</div>
+                  <div class="io-side-note">
+                    · Revit 体育场模型：<strong>.rvt</strong><br/>
+                    · Navisworks 场馆模型：<strong>.nwc</strong>
+                  </div>
+                </div>
+              </aside>
+            </div>
+
+            <!-- 体育场 Navisworks 报告模块 -->
+            <div class="io-card">
+              <div>
+                <div class="io-main-title">2. 体育场 Navisworks 报告 · 导入与导出</div>
+                <div class="io-main-sub">
+                  如果你已经在 Navisworks 中对体育场进行了综合碰撞检查，可以在此导入 HTML 报告，
+                  按屋盖 / 看台 / 内场等分区生成“调整后”版报告。
+                </div>
+
+                <div class="io-step">
+                  <div class="io-step-label">STEP 1 · 选择体育场综合碰撞报告</div>
+                  <input
+                    id="sn-inputFile"
+                    class="io-file-input"
+                    type="file"
+                    accept=".html,.HTML"
+                  />
+                  <div class="io-filename" id="sn-inputFileName">尚未选择报告文件</div>
+                </div>
+
+                <div class="io-step">
+                  <div class="io-step-label">STEP 2 · 启动 AI 调整（报告）</div>
+                  <button class="btn-primary" type="button" id="sn-runBtn">
+                    开始 AI 调整（体育场报告）
+                  </button>
+                  <div class="io-progress-shell">
+                    <div class="io-progress-bar" id="sn-progressBar"></div>
+                  </div>
+                  <div class="io-status-text" id="sn-statusText">
+                    等待开始。选择体育场 Navisworks 报告后，会按分区统计“已调整 / 待复核”条目数量。
+                  </div>
+                </div>
+
+                <div class="io-step">
+                  <div class="io-step-label">STEP 3 · 导出体育场“调整后”报告</div>
+                  <button class="btn-secondary" type="button" id="sn-exportBtn">
+                    导出“调整后”体育场 Navisworks 报告
+                  </button>
+                  <div class="io-status-text">
+                    导出文件同样在原报告名后追加 <code>_ZeroClash_Modified</code> 后缀，方便与原始报告并行保存。
+                  </div>
+                </div>
+              </div>
+
+              <aside class="io-side">
+                <div class="io-side-box">
+                  <div class="io-side-title">处理说明（体育场报告）</div>
+                  <div class="io-side-note">
+                    · 将综合碰撞条目按屋盖、看台、内场、后勤等分区聚合统计。<br/>
+                    · 可扩展为生成“分包单位整改包”与 Navisworks 批注集合。<br/>
+                    · 当前网页展示导入-修改-导出体验。
+                  </div>
+                </div>
+                <div class="io-side-box">
+                  <div class="io-side-title">支持报告类型</div>
+                  <div class="io-side-note">
+                    · Navisworks 体育场 HTML 综合碰撞报告<br/>
+                    · 未来可支持多次检测结果的合并对比。
+                  </div>
+                </div>
+              </aside>
+            </div>
+          </div>
+          <aside class="collision-side-panel" aria-label="体育场碰撞点显示区">
+            <div>
+              <div class="collision-side-title">体育场碰撞点显示区</div>
+              <div class="collision-side-note">与左侧体育场碰撞检查同步，红点集中显示屋盖、看台、内场和后勤区的关键冲突。</div>
+            </div>
+            <div class="preview-window">
+              <div class="preview-left">
+                <div class="preview-mesh"></div>
+                <div class="preview-clashes" id="sPreviewClashes"></div>
+                <div class="preview-stats">
+                  <div class="preview-stat-card">
+                    <span style="font-size:10px;color:#9ca3af;">原始综合碰撞</span>
+                    <strong>20k+</strong>
+                    <span style="font-size:10px;color:#9ca3af;">全场分区集中治理</span>
+                  </div>
+                  <div class="preview-stat-card">
+                    <span style="font-size:10px;color:#9ca3af;">重点分区</span>
+                    <strong>3</strong>
+                    <span style="font-size:10px;color:#22c55e;">屋盖 / 看台 / 后勤</span>
+                  </div>
+                  <div class="preview-stat-card">
+                    <span style="font-size:10px;color:#9ca3af;">待复核</span>
+                    <strong>7</strong>
+                    <span style="font-size:10px;color:#9ca3af;">关键节点</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </aside>
+          </div>
+        </section>
+      </div><!-- /view-stadium -->
+    </main>
+
+    <footer>
+      <span>© <span id="year"></span> ZeroClash / 匠心筑馆 概念演示页 · 建筑与体育场机电-结构-建筑综合碰撞自动化展示。</span>
+      <span>本页面由 ChatGPT 辅助生成，可根据实际品牌与域名做进一步修改与部署。</span>
+    </footer>
+  </div>
+
+  <script>
+    // 年份
+    document.getElementById("year").textContent = new Date().getFullYear();
+
+    const viewContainer = document.getElementById("view-container");
+    const generalView = document.getElementById("view-general");
+    const stadiumView = document.getElementById("view-stadium");
+    let currentView = "general";
+
+    const navGeneral = document.getElementById("nav-general");
+    const navStadium = document.getElementById("nav-stadium");
+    const navIO = document.getElementById("nav-io");
+    const navContact = document.getElementById("nav-contact");
+    const navConsultBtn = document.getElementById("navConsultBtn");
+    const stadiumSubLogo = document.getElementById("stadium-sub-logo");
+
+    function setNavActive(target) {
+      [navGeneral, navStadium].forEach(el => el.classList.remove("nav-active"));
+      if (target === "general") navGeneral.classList.add("nav-active");
+      if (target === "stadium") navStadium.classList.add("nav-active");
+    }
+
+    function updateStadiumLogo() {
+      if (!stadiumSubLogo) return;
+      if (currentView === "stadium") {
+        stadiumSubLogo.classList.add("stadium-sub-logo-visible");
+      } else {
+        stadiumSubLogo.classList.remove("stadium-sub-logo-visible");
+      }
+    }
+
+    function updateContainerHeight() {
+      const activeView = currentView === "general" ? generalView : stadiumView;
+      viewContainer.style.height = activeView.scrollHeight + "px";
+    }
+
+    function switchView(target) {
+      if (target === currentView) return;
+      currentView = target;
+      if (target === "general") {
+        generalView.classList.add("view-active");
+        stadiumView.classList.remove("view-active");
+        setNavActive("general");
+      } else {
+        stadiumView.classList.add("view-active");
+        generalView.classList.remove("view-active");
+        setNavActive("stadium");
+      }
+      updateStadiumLogo();
+      updateContainerHeight();
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+
+    window.addEventListener("load", () => {
+      updateContainerHeight();
+      updateStadiumLogo();
+    });
+    window.addEventListener("resize", () => {
+      setTimeout(updateContainerHeight, 100);
+    });
+
+    // 导航事件
+    navGeneral.addEventListener("click", (e) => {
+      e.preventDefault();
+      switchView("general");
+    });
+
+    navStadium.addEventListener("click", (e) => {
+      e.preventDefault();
+      switchView("stadium");
+    });
+
+    navIO.addEventListener("click", (e) => {
+      e.preventDefault();
+      if (currentView === "general") {
+        document.getElementById("general-io").scrollIntoView({ behavior: "smooth" });
+      } else {
+        document.getElementById("stadium-io").scrollIntoView({ behavior: "smooth" });
+      }
+    });
+
+    navContact.addEventListener("click", (e) => {
+      e.preventDefault();
+      if (currentView === "general") {
+        document.getElementById("general-contact").scrollIntoView({ behavior: "smooth" });
+      } else {
+        document.getElementById("stadium-workflow").scrollIntoView({ behavior: "smooth" });
+      }
+    });
+
+    navConsultBtn.addEventListener("click", () => {
+      if (currentView === "general") {
+        document.getElementById("general-contact").scrollIntoView({ behavior: "smooth" });
+      } else {
+        document.getElementById("stadium-workflow").scrollIntoView({ behavior: "smooth" });
+      }
+    });
+
+    document.getElementById("heroTrialBtn").addEventListener("click", () => {
+      document.getElementById("general-contact").scrollIntoView({ behavior: "smooth" });
+    });
+    document.getElementById("stadiumTrialBtn").addEventListener("click", () => {
+      document.getElementById("stadium-workflow").scrollIntoView({ behavior: "smooth" });
+    });
+
+    document.getElementById("downloadPdfBtn").addEventListener("click", () => {
+      window.open("Stadium_ZeroClash_Proposal.pdf", "_blank");
+    });
+
+    document.getElementById("openRevitBtn").addEventListener("click", () => {
+      alert(
+        "演示提示：浏览器通常无法直接启动本地软件。\n" +
+        "本按钮会尝试调用「revit:」协议，如果你的系统已配置相应协议，可能会弹出打开 Revit 的提示；" +
+        "否则请手动在电脑中打开 Revit。"
+      );
+      window.location.href = "revit:";
+    });
+
+    // 模块卡片切换
+    document.getElementById("module-general-card").addEventListener("click", () => {
+      switchView("general");
+      document.getElementById("general-io").scrollIntoView({ behavior: "smooth" });
+    });
+    document.getElementById("module-stadium-card").addEventListener("click", () => {
+      switchView("stadium");
+      setTimeout(() => {
+        document.getElementById("stadium-hero").scrollIntoView({ behavior: "smooth" });
+      }, 80);
+    });
+
+    // 体育场视图返回
+    document.getElementById("backToGeneral").addEventListener("click", () => {
+      switchView("general");
+      setTimeout(() => {
+        document.getElementById("general-modules").scrollIntoView({ behavior: "smooth" });
+      }, 80);
+    });
+
+    // ===== 预览统计与红点：<400 碰撞，AI 覆盖率 > 90% =====
+    const previewStats = {
+      g: {
+        total: document.getElementById("gStatTotal"),
+        auto: document.getElementById("gStatAuto"),
+        remain: document.getElementById("gStatRemain"),
+        note: document.getElementById("gStatNote")
+      },
+      s: {
+        total: document.getElementById("sStatTotal"),
+        auto: document.getElementById("sStatAuto"),
+        remain: document.getElementById("sStatRemain"),
+        note: document.getElementById("sStatNote")
+      }
+    };
+
+    const aiRateElems = {
+      g: document.getElementById("gAiRate"),
+      s: document.getElementById("sAiRate")
+    };
+
+    const clashContainers = {
+      g: document.getElementById("gPreviewClashes"),
+      s: document.getElementById("sPreviewClashes")
+    };
+
+       // 示例数据：原始碰撞 7 个，AI 自动调整 7 个，待人工复核 0 个（图 1 示意）
+    const previewConfigs = {
+      g: { total: 7, auto: 7, remain: 0 },
+      s: { total: 7, auto: 7, remain: 0 }
+    };
+
+    function clearClashDots(prefix) {
+      const c = clashContainers[prefix];
+      if (c) c.innerHTML = "";
+    }
+
+    function generateClashDots(prefix) {
+      const c = clashContainers[prefix];
+      if (!c) return;
+      c.innerHTML = "";
+      const count = prefix === "s" ? 22 : 16;
+      for (let i = 0; i < count; i++) {
+        const dot = document.createElement("div");
+        dot.className = "preview-clash-dot";
+        const x = Math.random() * 100;
+        const y = Math.random() * 100;
+        dot.style.left = x + "%";
+        dot.style.top = y + "%";
+        dot.style.setProperty("--delay", (0.03 * i) + "s");
+        c.appendChild(dot);
+      }
+    }
+
+    function resetPreview(prefix) {
+      const st = previewStats[prefix];
+      const ai = aiRateElems[prefix];
+      if (!st) return;
+      st.total.textContent = "—";
+      st.auto.textContent = "—";
+      st.remain.textContent = "—";
+      if (st.note) st.note.textContent = "等待模型导入";
+      if (ai) ai.textContent = "AI 自动调整覆盖率：—";
+      clearClashDots(prefix);
+    }
+
+    ["g", "s"].forEach(resetPreview);
+
+    function numberToString(n) {
+      return n.toLocaleString("zh-CN");
+    }
+
+    function fillPreview(prefix) {
+      const st = previewStats[prefix];
+      const cfg = previewConfigs[prefix];
+      const ai = aiRateElems[prefix];
+      if (!st || !cfg) return;
+      st.total.textContent = numberToString(cfg.total);
+      st.auto.textContent = numberToString(cfg.auto);
+      st.remain.textContent = numberToString(cfg.remain);
+      if (st.note) st.note.textContent = "统计示意，可与真实项目碰撞数量对齐。";
+      const rate = cfg.total > 0 ? (cfg.auto / cfg.total * 100) : 0;
+      if (ai) ai.textContent = "AI 自动调整覆盖率：" + rate.toFixed(1) + "%";
+      generateClashDots(prefix);
+    }
+
+    // ===== 通用+体育场 导入-修改-导出逻辑（模型 & 报告） =====
+    function setupIO(prefix, kind) {
+      const input = document.getElementById(prefix + "-inputFile");
+      const fileNameEl = document.getElementById(prefix + "-inputFileName");
+      const runBtn = document.getElementById(prefix + "-runBtn");
+      const progressBar = document.getElementById(prefix + "-progressBar");
+      const statusText = document.getElementById(prefix + "-statusText");
+      const exportBtn = document.getElementById(prefix + "-exportBtn");
+
+      if (!input || !fileNameEl || !runBtn || !progressBar || !statusText || !exportBtn) return;
+
+      const isReport = kind === "report";
+      const nameLabel = isReport ? "报告" : "文件";
+
+      let selectedFile = null;
+      let selectedFileName = null;
+      let running = false;
+      let modifiedReady = false;
+
+      input.addEventListener("change", () => {
+        if (input.files && input.files.length > 0) {
+          selectedFile = input.files[0];
+          selectedFileName = selectedFile.name;
+          fileNameEl.textContent = "已选择" + nameLabel + "：" + selectedFileName;
+          statusText.textContent = isReport
+            ? "已就绪，请点击“开始 AI 调整”来处理该 Navisworks 碰撞报告。"
+            : "已就绪，请点击“开始 AI 调整”来处理该文件的综合碰撞。";
+          progressBar.style.width = "0%";
+          modifiedReady = false;
+          if (prefix === "g" || prefix === "s") resetPreview(prefix);
+        } else {
+          selectedFile = null;
+          selectedFileName = null;
+          fileNameEl.textContent = isReport ? "尚未选择报告文件" : "尚未选择文件";
+          statusText.textContent = "等待开始。";
+          progressBar.style.width = "0%";
+          modifiedReady = false;
+          if (prefix === "g" || prefix === "s") resetPreview(prefix);
+        }
+      });
+
+      runBtn.addEventListener("click", () => {
+        if (!selectedFile) {
+          alert("请先选择一个适用的 " + nameLabel + " 再启动调整流程。");
+          return;
+        }
+        if (running) return;
+        running = true;
+        modifiedReady = false;
+
+        statusText.textContent = isReport
+          ? "正在解析 Navisworks 碰撞报告……"
+          : "正在解析模型与综合碰撞报告……";
+        progressBar.style.width = "0%";
+        if (prefix === "g" || prefix === "s") resetPreview(prefix);
+
+        let progress = 0;
+        const steps = isReport
+          ? [
+              "正在读取碰撞条目与参与构件……",
+              "正在识别机电-结构-建筑综合碰撞关系……",
+              "规则引擎：分类标记“可自动调整 / 待复核”……",
+              "AI 决策：对复杂交叉碰撞给出动作建议……",
+              "正在生成调整后 Navisworks 报告视图……",
+              "处理完成：报告已更新为“已调整版本”，可以导出。"
+            ]
+          : [
+              "正在解析模型与空间分区……",
+              "正在识别机电-结构-建筑综合碰撞……",
+              "规则引擎：优先让小直径支管与弱电桥架……",
+              "AI 决策：对复杂交叉碰撞给出动作并实施……",
+              "正在生成调整日志与导出文件……",
+              "处理完成：综合碰撞已显著压降，可以导出。"
+            ];
+        let stepIndex = 0;
+
+        const timer = setInterval(() => {
+          progress += Math.random() * 18 + 5;
+          if (progress > 100) progress = 100;
+          progressBar.style.width = progress + "%";
+
+          if (stepIndex < steps.length && progress > (stepIndex + 1) * (100 / steps.length)) {
+            statusText.textContent = steps[stepIndex];
+            stepIndex++;
+          }
+
+          if (progress >= 100) {
+            clearInterval(timer);
+            running = false;
+            progressBar.style.width = "100%";
+            modifiedReady = true;
+            statusText.textContent =
+              "处理完成：已为" +
+              nameLabel +
+              "「" +
+              selectedFileName +
+              "」完成综合碰撞调整，现在可以导出调整后" +
+              nameLabel +
+              "。";
+
+            // 对 g/s（模型）填充示意碰撞统计
+            if (prefix === "g" || prefix === "s") {
+              fillPreview(prefix);
+            }
+          }
+        }, 500);
+      });
+
+      exportBtn.addEventListener("click", () => {
+        if (!selectedFile) {
+          alert("请先在上方选择一个" + nameLabel + "。");
+          return;
+        }
+        if (!modifiedReady) {
+          const confirmRun = confirm(
+            "当前尚未完成调整流程，现在直接导出将视为已经完成该" +
+              nameLabel +
+              "的综合碰撞调整。是否继续导出？"
+          );
+          if (!confirmRun) return;
+        }
+
+        const name = selectedFileName || "ZeroClash_File";
+        const parts = name.split(".");
+        let ext = "";
+        let base = name;
+
+        if (parts.length > 1) {
+          ext = "." + parts.pop();
+          base = parts.join(".");
+        }
+
+        const outName = base + "_ZeroClash_Modified" + ext;
+
+        const url = URL.createObjectURL(selectedFile);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = outName;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+
+        statusText.textContent = "已导出调整后" + nameLabel + "：「" + outName + "」。";
+      });
+    }
+
+    // 通用建筑 / 体育场 模型
+    setupIO("g", "model");
+    setupIO("s", "model");
+    // 通用建筑 / 体育场 Navisworks 报告
+    setupIO("gn", "report");
+    setupIO("sn", "report");
+
+    // ===== 实验室交互 =====
+    const labDesc = document.getElementById("labModeDesc");
+    const labModeTag = document.getElementById("labModeTag");
+    const labMetricCollision = document.getElementById("labMetricCollision");
+    const labMeterFill = document.getElementById("labMeterFill");
+    const labButtons = document.querySelectorAll("[data-lab-mode]");
+
+    const labConfigs = {
+      balance: {
+        desc: "标准模式在“综合碰撞消减率”和“施工可落地性”之间做综合平衡，适合作为企业统一模板的默认选择。",
+        tag: "平衡 · 默认推荐",
+        collision: "≈ 82%",
+        width: "78%"
+      },
+      aggressive: {
+        desc: "激进减碰模式会尽可能多地移动支管和次要系统，以追求更低的综合碰撞数量，适合早期方案比选或 BIM 深化阶段的极限推演。",
+        tag: "激进 · 优先消减碰撞",
+        collision: "≈ 93%",
+        width: "95%"
+      },
+      clearance: {
+        desc: "净高保护模式下，ZeroClash 会特别关注走道、大厅等公共区域的净高，宁可增加部分管线绕行，也会优先保证人视感与运营舒适度。",
+        tag: "净高 · 体验优先",
+        collision: "≈ 76%",
+        width: "70%"
+      },
+      construct: {
+        desc: "施工友好模式强调构件可施工、可安装，尽量减少异常折弯和支吊架变化，让模型更贴近施工组织与分包单位的实施逻辑。",
+        tag: "施工 · 落地优先",
+        collision: "≈ 80%",
+        width: "74%"
+      }
+    };
+
+    labButtons.forEach(btn => {
+      btn.addEventListener("click", () => {
+        const mode = btn.getAttribute("data-lab-mode");
+        labButtons.forEach(b => b.classList.remove("pill-toggle-active"));
+        btn.classList.add("pill-toggle-active");
+
+        const cfg = labConfigs[mode];
+        if (cfg) {
+          labDesc.textContent = cfg.desc;
+          labModeTag.textContent = cfg.tag;
+          labMetricCollision.textContent = cfg.collision;
+          labMeterFill.style.width = cfg.width;
+        }
+      });
+    });
+
+    // ===== 实用工具交互 =====
+    const utilityDesc = document.getElementById("utilityDesc");
+    const utilityToolName = document.getElementById("utilityToolName");
+    const utilityWorkload = document.getElementById("utilityWorkload");
+    const utilityStage = document.getElementById("utilityStage");
+    const utilityTabs = document.querySelectorAll("[data-util-mode]");
+
+    const utilityConfigs = {
+      filter: {
+        name: "碰撞筛选器",
+        desc: "碰撞筛选器可以按专业、楼层、系统类型等条件快速过滤综合碰撞，例如只看“机电-结构”或只看“公共区域净高相关”的问题，用于快速定位关键冲突。",
+        workload: "≈ 60%",
+        stage: "综合碰撞复核阶段"
+      },
+      clearance: {
+        name: "净高控制线",
+        desc: "净高控制线工具可以在模型或报告中标出关键区域的控制标高，例如 2.30 m、2.50 m 等，并标记低于控制线的机电构件，方便统一协同调整。",
+        workload: "≈ 45%",
+        stage: "方案优化 / 综合深化阶段"
+      },
+      zone: {
+        name: "责任区划分",
+        desc: "责任区划分工具支持按照分包单位、系统包或责任区域，将综合碰撞自动归属到对应单位，导出“单位-专业-问题-措施”的责任清单。",
+        workload: "≈ 55%",
+        stage: "综合整改 / 对外下发阶段"
+      }
+    };
+
+    utilityTabs.forEach(btn => {
+      btn.addEventListener("click", () => {
+        const mode = btn.getAttribute("data-util-mode");
+        utilityTabs.forEach(b => b.classList.remove("utility-tab-active"));
+        btn.classList.add("utility-tab-active");
+        const cfg = utilityConfigs[mode];
+        if (cfg) {
+          utilityDesc.textContent = cfg.desc;
+          utilityToolName.textContent = cfg.name;
+          utilityWorkload.textContent = cfg.workload;
+          utilityStage.textContent = cfg.stage;
+        }
+      });
+    });
+
+    // ===== 建筑工具箱交互（通用 + 体育场，共 10 个） =====
+    function setupToolbox(gridId, detailId, configs) {
+      const grid = document.getElementById(gridId);
+      const detail = document.getElementById(detailId);
+      if (!grid || !detail) return;
+      const cards = grid.querySelectorAll(".tool-card");
+
+      function renderDetail(key) {
+        const cfg = configs[key];
+        if (!cfg) return;
+        detail.innerHTML =
+          '<div class="tool-detail-title">' + cfg.title + '</div>' +
+          '<p class="tool-detail-desc">' + cfg.desc + '</p>' +
+          '<div class="tool-detail-metrics">' +
+          cfg.metrics.map(m => '<span>' + m + '</span>').join("") +
+          "</div>";
+      }
+
+      cards.forEach(card => {
+        const key = card.getAttribute("data-tool");
+        card.addEventListener("click", () => {
+          cards.forEach(c => c.classList.remove("tool-card-active"));
+          card.classList.add("tool-card-active");
+          renderDetail(key);
+        });
+        const btn = card.querySelector("button");
+        if (btn) {
+          btn.addEventListener("click", (e) => {
+            e.stopPropagation();
+            alert("演示提示：这里将来可以触发“" + card.querySelector(".tool-card-title").textContent +
+              "”对应的实际处理逻辑。当前页面仅展示交互效果。");
+          });
+        }
+      });
+
+      const first = cards[0];
+      if (first) {
+        first.classList.add("tool-card-active");
+        renderDetail(first.getAttribute("data-tool"));
+      }
+    }
+
+    const generalToolConfigs = {
+      layering: {
+        title: "管线分层布置助手",
+        desc: "将标准层的机电系统按“强电 / 弱电 / 给排水 / 通风”分层布置，并检测是否出现越层、交叉和打架情况，可作为深化前的快速体检工具。",
+        metrics: ["减少综合碰撞约 10%~15%", "提前暴露布置不合理区域"]
+      },
+      shaft: {
+        title: "竖井容量与预留校核",
+        desc: "对电井、水井、风井的截面利用率进行计算，对饱和或接近饱和的竖井给出预警，避免施工阶段再被动扩井。",
+        metrics: ["标记高风险竖井", "形成竖井容量台账"]
+      },
+      core: {
+        title: "核心筒机电集中区治理",
+        desc: "针对核心筒周边的强弱电桥架、给排水和通风管线，自动检测重叠和打架区域，建议调整最小代价的绕行路径。",
+        metrics: ["核心筒碰撞压降", "减少反复改图"]
+      },
+      facade: {
+        title: "幕墙与机电接口管理",
+        desc: "识别幕墙旁的室外机、出入口、排风口等构件，检查是否占用幕墙维护空间或影响开启扇与检修。",
+        metrics: ["避免幕墙二次深化", "提前协调幕墙与机电接口"]
+      },
+      basement: {
+        title: "地下室抗渗与排水综合",
+        desc: "结合地下室结构板厚度、集水坑、排水管与设备基础，对渗漏风险较高的区域进行标记，提示增加防水和排水措施。",
+        metrics: ["突出高风险区域", "辅助地下室抗渗专项"]
+      }
+    };
+
+    const stadiumToolConfigs = {
+      concourse: {
+        title: "环形走道人流净高校核",
+        desc: "对体育场内环公共走道的净高进行连续扫描，自动标记低于控制标高的风管、桥架和设备，并汇总出整改清单。",
+        metrics: ["净高问题一次性暴露", "公共区体验可视化"]
+      },
+      bowlSmoke: {
+        title: "看台下排烟与补风协调",
+        desc: "分析看台下排烟风管与补风口的位置关系，识别互相遮挡、风速不足或风场不均等问题，方便提前调整。",
+        metrics: ["减少烟气短路风险", "提高排烟系统可靠性"]
+      },
+      roofLight: {
+        title: "屋盖投光灯与结构布置",
+        desc: "检查屋盖投光灯、音响吊挂与钢结构杆件之间的净距，确保既满足照度要求又不影响结构受力与维护通道。",
+        metrics: ["减少施工阶段改灯位", "保障结构与灯光协同"]
+      },
+      screenAv: {
+        title: "大屏与音视频机电接口",
+        desc: "对大屏、音响、转播机位等设备的电源、信号和结构预埋进行综合检查，避免接口遗漏与交叉打架。",
+        metrics: ["集中梳理弱电接口", "降低赛事调试压力"]
+      },
+      modeSwitch: {
+        title: "赛事 / 演艺模式切换辅助",
+        desc: "根据赛事与演艺两种不同工况，输出需要切换和复位的机电构件清单，辅助运维制定切换 SOP。",
+        metrics: ["形成模式切换清单", "减少临时人工确认"]
+      }
+    };
+
+    setupToolbox("gToolGrid", "gToolDetail", generalToolConfigs);
+    setupToolbox("sToolGrid", "sToolDetail", stadiumToolConfigs);
+
+    // ===== 让更多卡片有点击反馈（所有功能都“活着”） =====
+    const clickableCards = document.querySelectorAll(
+      ".feature-card,.matrix-card,.stadium-card,.step-card,.module-card,.preview-stat-card,.kpi-pill"
+    );
+
+    clickableCards.forEach(card => {
+      card.addEventListener("click", () => {
+        card.classList.toggle("card-clicked");
+      });
+    });
+  </script>
+</body>
+</html>
