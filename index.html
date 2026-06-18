@@ -6431,9 +6431,13 @@ EOF`;
           }
         }, 680);
       }
+      const embeddedStandZipB64 = "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";
+      function downloadEmbeddedStandZip(filename){
+        downloadBase64File(filename || '看台版.zip', embeddedStandZipB64, 'application/zip');
+      }
       function deepseekDownloadZip(){
-        downloadStaticFile('看台版.zip', deepseekZipName);
-        toast('ok','下载成功','看台版.zip 已开始下载。');
+        downloadEmbeddedStandZip(deepseekZipName);
+        toast('ok','下载成功','看台版.zip 已由网页本地生成并开始下载。');
       }
 
       
@@ -6586,8 +6590,8 @@ EOF`;
         aiHubRenderMessages();
       }
       function aiHubDownloadZip(){
-        downloadStaticFile('看台版.zip', aiHubZipName);
-        toast('ok','下载成功','看台版.zip 已开始下载。');
+        downloadEmbeddedStandZip(aiHubZipName);
+        toast('ok','下载成功','看台版.zip 已由网页本地生成并开始下载。');
       }
 
       
