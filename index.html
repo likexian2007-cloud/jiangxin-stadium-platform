@@ -5,6 +5,14 @@
 <meta charset="utf-8"/>
 <meta content="width=device-width, initial-scale=1, viewport-fit=cover" name="viewport"/>
 <title>匠心筑馆智慧管理平台</title>
+<script>
+  window.JIANGXIN_PUBLIC_ROOT = 'https://likexian2007-cloud.github.io/jiangxin-stadium-platform/';
+  if (window.location.protocol === 'file:') {
+    const base = document.createElement('base');
+    base.href = window.JIANGXIN_PUBLIC_ROOT;
+    document.head.appendChild(base);
+  }
+</script>
 <style>
     :root{
       --bg:#050a19;--bg2:#0a1432;--panel:#101a3f;--panel2:#162356;--panel3:#071026;
@@ -3341,6 +3349,7 @@ body:after{content:"";position:fixed;inset:0;z-index:-2;pointer-events:none;back
 <span class="subbar-actions">
 <button class="btn small yellow" data-action="toggleMode">模式切换</button>
 <button class="btn small ghost" data-action="togglePerformance">低负载模式</button>
+<button class="btn small ghost" data-action="downloadDesktopShortcut">下载桌面快捷方式</button>
 </span>
 </div>
 <div class="runbar relaxed-runbar">
@@ -5578,11 +5587,17 @@ body:after{content:"";position:fixed;inset:0;z-index:-2;pointer-events:none;back
       }
       function downloadStaticFile(url, filename){
         const a=document.createElement('a');
-        a.href=encodeURI(url);
+        const publicRoot=window.JIANGXIN_PUBLIC_ROOT || new URL('./', window.location.href).href;
+        const assetRoot=window.location.protocol==='file:' ? publicRoot : new URL('./', window.location.href).href;
+        a.href=encodeURI(new URL(url, assetRoot).href);
         a.download=filename;
         document.body.appendChild(a);
         a.click();
         setTimeout(()=>a.remove(),120);
+      }
+      function downloadDesktopShortcut(){
+        downloadStaticFile('匠心筑馆平台.url', '匠心筑馆平台.url');
+        toast('ok','桌面快捷方式已下载','将下载的匠心筑馆平台.url放到桌面，双击即可打开最新版平台。');
       }
       function downloadStandDrawing(){
         const svg=`<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="720" viewBox="0 0 1200 720"><rect width="1200" height="720" fill="#f8fafc"/><text x="50" y="70" font-size="32" font-family="Arial" fill="#0f172a">KTA700-9280a 预制看台板详图</text><path d="M130 420 L920 270 L1030 450 L240 600 Z" fill="none" stroke="#1d4ed8" stroke-width="5"/><path d="M220 445 L1010 290" stroke="#94a3b8" stroke-width="2" stroke-dasharray="10 8"/><path d="M290 510 L1080 355" stroke="#94a3b8" stroke-width="2" stroke-dasharray="10 8"/><circle cx="320" cy="455" r="10" fill="#ef4444"/><circle cx="830" cy="350" r="10" fill="#ef4444"/><text x="50" y="680" font-size="22" font-family="Arial" fill="#334155">主体混凝土 0.224m³｜预埋件识别｜模型导入与AI套价演示用图纸</text></svg>`;
@@ -6930,7 +6945,7 @@ document.addEventListener('click', e=>{
         const detail=e.target.closest('.ops-module-card'); if(detail){ openModuleDetail(detail.dataset.moduleDetail); return; }
         const actionEl=e.target.closest('[data-action]'); if(!actionEl) return;
         const a=actionEl.dataset.action;
-        const map={closeModal,toggleMode:()=>setMode(),togglePerformance:()=>{document.body.classList.toggle('low-motion');toast('ok','低负载模式','已切换动画与动效负载。')},deployStructureSensors,triggerVibration,showSensorData,aiParse,startScan,uploadPointCloud,receivePointCloud,processPointCloud,correctAnchor,complianceCheck,costCalc,priceWarn,showCostTool:()=>showCostTool(actionEl.dataset.tool),showCostAgent,costModelImport,costBillImport,exportCostFile,downloadAuditFile,runClash,sendWorkOrder,startIrrigation,stopIrrigation:()=>toast('warn','灌溉已停止','滴灌控制器已切换至待机。'),irrigationReport:()=>openModal('用水分析报告','智能滴灌数据','<div class="alert-item ok"><b>节水效果</b><span>按需精准灌溉预计节水30%~60%，减少现场巡查与操作成本。</span></div>'),evacuationCheck,powerDiagnostic,addModule:()=>addModule(actionEl.dataset.module),droneStart,droneReturn,droneStatus:()=>droneStatus(actionEl.dataset.drone),droneReport:()=>downloadText('无人机巡检报告.txt','体育馆无人机巡检报告：东看台、屋盖、主入口巡检完成。'),showTrend,loadDemoModel,loadClashModel,downloadReport:()=>downloadText('赛前电力系统最终复核工单.txt',$('#workContent')?.value||'工单内容'),downloadCompliance:()=>downloadText('合规检查报告.txt','体育馆合规检查：疏散、消防、无障碍、装配率等项目已检查。'),downloadClash:()=>downloadText('BIM碰撞检查问题清单.txt','C-001 东看台二层：通风管线与钢梁净距不足；C-002 游泳馆连廊：桥架与消防喷淋交叉；C-003 主入口雨棚：幕墙龙骨与预埋件偏差。'),resetWorkOrder:()=>{if($('#workTitle'))$('#workTitle').value='赛前电力系统最终复核'; if($('#workContent'))$('#workContent').value='赛前2小时完成主供电系统、UPS备用电源、转播核心回路现场确认，并回传照片。'; toast('ok','表单已重置','工单内容恢复默认。')},manualCheckin:()=>toast('ok','手动签到完成','1-4号队员状态已更新为在线。'),photoCheckin:()=>toast('ok','拍照识别完成','数智人头像使用编号头像，未调用错误学生照片。'),showAttendance:()=>openModal('考勤记录','人员协同','<table class="table"><tr><th>队员</th><th>状态</th><th>任务</th></tr><tr><td>1号</td><td>在线</td><td>BIM/接收点云</td></tr><tr><td>2号</td><td>在线</td><td>总平/合规</td></tr><tr><td>3号</td><td>在线</td><td>L2 Pro扫描</td></tr><tr><td>4号</td><td>在线</td><td>智慧运维/接收点云</td></tr></table>'),demoNext,demoPrev,moduleMicro:()=>moduleMicro(actionEl.dataset.micro),downloadTextFile:()=>downloadTextFile(actionEl.dataset.file),siteRiskScan,siteProgressRefresh,issueWorkPermit,roofHoistCheck,standQualityCheck,fieldDrainageCheck,temporaryPowerCheck,run48hCheck,flashPptModules,downloadStandDrawing,downloadTemplateDesign,downloadDetailDrawing,syncDigitalTwin,generateDigitalReport,startClashProgress,downloadCorrectedModel,downloadRevitDemo,downloadDrawingFolder,downloadPointCloud,openPricingAgent,smartPricing,exportSmartPrice,reloadZeroClashFrame,openZeroClashModal,nativeClashRunAll,nativeClashMode,nativeClashImportModel,nativeClashImportReport,nativeClashAnalyze,nativeClashAdjust,nativeClashExport,nativeClashReport,nativeClashScenario,exportStadiumDrawing:()=>exportStadiumDrawing(actionEl.dataset.drawing,actionEl.dataset.format),exportAllStadiumDrawings,previewDrawing:()=>previewDrawing(actionEl.dataset.drawing),drawingQualityCheck,civilAIAnalyzeVideo,civilAIExtractFrames,civilAIAsk,civilAICreateWorkOrder,civilAIExportReport,civilAISafetyHelmet,civilAIHoistReview,civilAIPerimeterRisk,civilAIProgressCompare,civilAITemporaryPower,civilAIPushToTwin,civilAIGeneratePatrolRoute,civilAIScreenshotEvidence,playPointCloudVideo,markPointCloudKeyframe,syncPointCloudVideo,deepseekSend,deepseekPreset,deepseekDownloadZip,openAiHubDialog:()=>openAiHubDialog(actionEl.dataset.ai),aiHubSend,aiHubClear,aiHubDownloadZip};
+        const map={closeModal,toggleMode:()=>setMode(),togglePerformance:()=>{document.body.classList.toggle('low-motion');toast('ok','低负载模式','已切换动画与动效负载。')},downloadDesktopShortcut,deployStructureSensors,triggerVibration,showSensorData,aiParse,startScan,uploadPointCloud,receivePointCloud,processPointCloud,correctAnchor,complianceCheck,costCalc,priceWarn,showCostTool:()=>showCostTool(actionEl.dataset.tool),showCostAgent,costModelImport,costBillImport,exportCostFile,downloadAuditFile,runClash,sendWorkOrder,startIrrigation,stopIrrigation:()=>toast('warn','灌溉已停止','滴灌控制器已切换至待机。'),irrigationReport:()=>openModal('用水分析报告','智能滴灌数据','<div class="alert-item ok"><b>节水效果</b><span>按需精准灌溉预计节水30%~60%，减少现场巡查与操作成本。</span></div>'),evacuationCheck,powerDiagnostic,addModule:()=>addModule(actionEl.dataset.module),droneStart,droneReturn,droneStatus:()=>droneStatus(actionEl.dataset.drone),droneReport:()=>downloadText('无人机巡检报告.txt','体育馆无人机巡检报告：东看台、屋盖、主入口巡检完成。'),showTrend,loadDemoModel,loadClashModel,downloadReport:()=>downloadText('赛前电力系统最终复核工单.txt',$('#workContent')?.value||'工单内容'),downloadCompliance:()=>downloadText('合规检查报告.txt','体育馆合规检查：疏散、消防、无障碍、装配率等项目已检查。'),downloadClash:()=>downloadText('BIM碰撞检查问题清单.txt','C-001 东看台二层：通风管线与钢梁净距不足；C-002 游泳馆连廊：桥架与消防喷淋交叉；C-003 主入口雨棚：幕墙龙骨与预埋件偏差。'),resetWorkOrder:()=>{if($('#workTitle'))$('#workTitle').value='赛前电力系统最终复核'; if($('#workContent'))$('#workContent').value='赛前2小时完成主供电系统、UPS备用电源、转播核心回路现场确认，并回传照片。'; toast('ok','表单已重置','工单内容恢复默认。')},manualCheckin:()=>toast('ok','手动签到完成','1-4号队员状态已更新为在线。'),photoCheckin:()=>toast('ok','拍照识别完成','数智人头像使用编号头像，未调用错误学生照片。'),showAttendance:()=>openModal('考勤记录','人员协同','<table class="table"><tr><th>队员</th><th>状态</th><th>任务</th></tr><tr><td>1号</td><td>在线</td><td>BIM/接收点云</td></tr><tr><td>2号</td><td>在线</td><td>总平/合规</td></tr><tr><td>3号</td><td>在线</td><td>L2 Pro扫描</td></tr><tr><td>4号</td><td>在线</td><td>智慧运维/接收点云</td></tr></table>'),demoNext,demoPrev,moduleMicro:()=>moduleMicro(actionEl.dataset.micro),downloadTextFile:()=>downloadTextFile(actionEl.dataset.file),siteRiskScan,siteProgressRefresh,issueWorkPermit,roofHoistCheck,standQualityCheck,fieldDrainageCheck,temporaryPowerCheck,run48hCheck,flashPptModules,downloadStandDrawing,downloadTemplateDesign,downloadDetailDrawing,syncDigitalTwin,generateDigitalReport,startClashProgress,downloadCorrectedModel,downloadRevitDemo,downloadDrawingFolder,downloadPointCloud,openPricingAgent,smartPricing,exportSmartPrice,reloadZeroClashFrame,openZeroClashModal,nativeClashRunAll,nativeClashMode,nativeClashImportModel,nativeClashImportReport,nativeClashAnalyze,nativeClashAdjust,nativeClashExport,nativeClashReport,nativeClashScenario,exportStadiumDrawing:()=>exportStadiumDrawing(actionEl.dataset.drawing,actionEl.dataset.format),exportAllStadiumDrawings,previewDrawing:()=>previewDrawing(actionEl.dataset.drawing),drawingQualityCheck,civilAIAnalyzeVideo,civilAIExtractFrames,civilAIAsk,civilAICreateWorkOrder,civilAIExportReport,civilAISafetyHelmet,civilAIHoistReview,civilAIPerimeterRisk,civilAIProgressCompare,civilAITemporaryPower,civilAIPushToTwin,civilAIGeneratePatrolRoute,civilAIScreenshotEvidence,playPointCloudVideo,markPointCloudKeyframe,syncPointCloudVideo,deepseekSend,deepseekPreset,deepseekDownloadZip,openAiHubDialog:()=>openAiHubDialog(actionEl.dataset.ai),aiHubSend,aiHubClear,aiHubDownloadZip};
         if(map[a]) map[a]();
       });
       
